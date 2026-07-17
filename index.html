@@ -321,29 +321,24 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
     <p class="sub">全家人一起照顧，資料即時互通</p>
 
     <div class="card">
-      <h2>☁️ 雲端同步模式（推薦）</h2>
+      <h2>☁️ 加入我們家的照護紀錄（推薦）</h2>
       <p style="font-size:.9rem;color:var(--ink-2);margin-bottom:12px">
-        家人在各自手機上都能看到同一份資料。需要先依照說明建立免費的 Supabase 資料庫（約 10 分鐘，僅需設定一次）。
+        已經幫全家人設定好共用資料庫，輸入您的稱呼就能立即和家人共享同一份紀錄。
       </p>
-      <div class="field"><label>Supabase 網址（Project URL）</label>
-        <input id="suUrl" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off"></div>
-      <div class="field"><label>Supabase 金鑰（anon public key）</label>
-        <input id="suKey" type="text" placeholder="eyJhbGciOi..." autocomplete="off"></div>
-      <div class="field"><label>家庭代碼（自訂，所有家人輸入相同代碼）</label>
-        <input id="suFamily" type="text" placeholder="例如：lin-family-2026" autocomplete="off"></div>
       <div class="field"><label>病人稱呼</label>
         <input id="suPatient" type="text" placeholder="例如：阿嬤"></div>
       <div class="field"><label>您的稱呼（記錄時顯示的名字）</label>
         <input id="suMe" type="text" placeholder="例如：大姊"></div>
       <button class="btn" id="btnCloudStart">開始使用雲端同步</button>
       <details>
-        <summary>還沒有 Supabase？看設定教學</summary>
-        <ol style="font-size:.88rem;color:var(--ink-2);padding-left:20px;margin-top:6px">
-          <li>到 supabase.com 註冊免費帳號並建立專案</li>
-          <li>在專案的 SQL Editor 貼上本專案提供的 setup.sql 並執行</li>
-          <li>到 Settings → API 複製 Project URL 與 anon public key</li>
-          <li>回到這裡貼上，自訂一組家庭代碼即可開始</li>
-        </ol>
+        <summary>進階設定（一般不需要修改）</summary>
+        <div class="field" style="margin-top:8px"><label>Supabase 網址（Project URL）</label>
+          <input id="suUrl" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off"></div>
+        <div class="field"><label>Supabase 金鑰（publishable / anon public key）</label>
+          <input id="suKey" type="text" placeholder="sb_publishable_..." autocomplete="off"></div>
+        <div class="field"><label>家庭代碼（所有家人需輸入相同代碼）</label>
+          <input id="suFamily" type="text" placeholder="例如：lin-family-2026" autocomplete="off"></div>
+        <p class="muted-note">若要改用不同的 Supabase 資料庫，可在此覆蓋預設值。首次使用前記得先在該專案的 SQL Editor 執行 setup.sql。</p>
       </details>
     </div>
 
@@ -587,6 +582,13 @@ function toast(msg) {
 const MEMBER_COLORS = ['#2a78d6','#008300','#e87ba4','#eda100','#1baf7a','#eb6834','#4a3aa7','#e34948'];
 
 /* ============ 設定與狀態 ============ */
+/* 我們家的共用 Supabase 專案 — 家人只需輸入自己的稱呼，不需再手動貼網址/金鑰 */
+const DEFAULT_CLOUD = {
+  url: 'https://jzrcyxmwxwzovpefjzlx.supabase.co',
+  key: 'sb_publishable_oianUkuCERgqEbjKooOoYQ_ufOE2Cn-',
+  family: 'home',
+};
+
 let config = lsGet('takecare_config', null);
 const isCloud = () => !!(config && config.mode === 'cloud' && config.url && config.key && config.family);
 
@@ -1533,10 +1535,10 @@ $('#btnSettings').addEventListener('click', () => {
   } else {
     cs.innerHTML = `
       <div class="card" style="background:var(--teal-50);box-shadow:none;margin-bottom:12px">
-        <p style="font-size:.9rem;color:var(--ink-2)">目前為<b>本機模式</b>，資料只存在這支手機。要讓家人互相看到資料，請設定雲端同步：</p>
-        <div class="field" style="margin-top:10px"><label>Supabase 網址</label><input type="url" id="setUrl" placeholder="https://xxxx.supabase.co"></div>
-        <div class="field"><label>anon 金鑰</label><input type="text" id="setKey" placeholder="eyJhbGciOi..."></div>
-        <div class="field"><label>家庭代碼</label><input type="text" id="setFamily" placeholder="例如：lin-family-2026"></div>
+        <p style="font-size:.9rem;color:var(--ink-2)">目前為<b>本機模式</b>，資料只存在這支手機。已預先填入我們家的共用資料庫，按「儲存設定」即可啟用：</p>
+        <div class="field" style="margin-top:10px"><label>Supabase 網址</label><input type="url" id="setUrl" value="${esc(DEFAULT_CLOUD.url)}"></div>
+        <div class="field"><label>Supabase 金鑰</label><input type="text" id="setKey" value="${esc(DEFAULT_CLOUD.key)}"></div>
+        <div class="field"><label>家庭代碼</label><input type="text" id="setFamily" value="${esc(DEFAULT_CLOUD.family)}"></div>
         <p class="muted-note">啟用後，這支手機上已有的紀錄會自動上傳合併。</p>
       </div>`;
   }
@@ -1711,7 +1713,12 @@ window.addEventListener('online', () => { if (config) refreshAll(true); });
 /* 進入點 */
 tryJoinLink();
 if (config) startApp();
-else $('#setupScreen').classList.add('show');
+else {
+  $('#suUrl').value = DEFAULT_CLOUD.url;
+  $('#suKey').value = DEFAULT_CLOUD.key;
+  $('#suFamily').value = DEFAULT_CLOUD.family;
+  $('#setupScreen').classList.add('show');
+}
 </script>
 </body>
 </html>
