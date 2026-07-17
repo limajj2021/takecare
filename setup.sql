@@ -50,18 +50,33 @@ create table if not exists public.logs (
   created_at timestamptz not null default now()
 );
 
+-- 飲水／排泄（出入量）紀錄
+create table if not exists public.io_records (
+  id uuid primary key default gen_random_uuid(),
+  family_code text not null,
+  ts timestamptz not null default now(),
+  type text not null check (type in ('water', 'urine', 'stool')),
+  amount integer,        -- cc（喝水/小便適用，大便可留空）
+  detail text,           -- 飲品種類 或 大便性質
+  recorder text,
+  note text,
+  created_at timestamptz not null default now()
+);
+
 create index if not exists vitals_family_ts_idx on public.vitals (family_code, ts desc);
 create index if not exists members_family_idx on public.members (family_code);
 create index if not exists shifts_family_date_idx on public.shifts (family_code, date);
 create index if not exists logs_family_ts_idx on public.logs (family_code, ts desc);
+create index if not exists io_records_family_ts_idx on public.io_records (family_code, ts desc);
 
 -- 開啟 RLS，並允許匿名（anon）讀寫。
 -- 資料以「家庭代碼」區隔：只有知道你們家庭代碼的人才查得到你們的資料。
 -- 此設計適合家庭私人使用；請勿在備註中存放身分證字號等高敏感資料。
-alter table public.vitals  enable row level security;
-alter table public.members enable row level security;
-alter table public.shifts  enable row level security;
-alter table public.logs    enable row level security;
+alter table public.vitals     enable row level security;
+alter table public.members    enable row level security;
+alter table public.shifts     enable row level security;
+alter table public.logs       enable row level security;
+alter table public.io_records enable row level security;
 
 drop policy if exists "anon full access" on public.vitals;
 create policy "anon full access" on public.vitals
@@ -77,4 +92,8 @@ create policy "anon full access" on public.shifts
 
 drop policy if exists "anon full access" on public.logs;
 create policy "anon full access" on public.logs
+  for all to anon using (true) with check (true);
+
+drop policy if exists "anon full access" on public.io_records;
+create policy "anon full access" on public.io_records
   for all to anon using (true) with check (true);
