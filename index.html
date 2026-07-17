@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#00897b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>家庭照護紀錄</title>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f3f8f7;
+  --card:#ffffff;
+  --teal-700:#00695c;
+  --teal-600:#00897b;
+  --teal-500:#26a69a;
+  --teal-100:#cfe9e5;
+  --teal-50:#e6f4f2;
+  --ink:#1c2b29;
+  --ink-2:#5f7370;
+  --muted:#8a9996;
+  --grid:#e3e8e7;
+  --danger:#d03b3b;
+  --danger-bg:#fdecea;
+  --series-1:#2a78d6;
+  --series-2:#008300;
+  --radius:16px;
+  --shadow:0 2px 10px rgba(38,64,60,.07);
+  --nav-h:calc(64px + env(safe-area-inset-bottom));
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:17px}
+body{
+  font-family:system-ui,-apple-system,"PingFang TC","Microsoft JhengHei","Segoe UI",sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.55;
+}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font:inherit;color:inherit}
+.app{max-width:520px;margin:0 auto;min-height:100vh}
+
+/* ---------- top bar ---------- */
+.topbar{
+  position:sticky;top:0;z-index:30;background:rgba(243,248,247,.92);
+  backdrop-filter:blur(8px);padding:12px 16px 10px;
+  display:flex;align-items:center;gap:8px;
+}
+.topbar h1{font-size:1.18rem;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sync-pill{
+  font-size:.78rem;padding:3px 10px;border-radius:99px;font-weight:600;
+  background:var(--teal-50);color:var(--teal-700);white-space:nowrap;
+}
+.sync-pill.offline{background:#fdf3e0;color:#8a5a00}
+.sync-pill.local{background:#eceff1;color:#546e7a}
+.icon-btn{
+  width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;color:var(--ink-2);flex:none;
+}
+.icon-btn:active{background:var(--teal-50)}
+
+/* ---------- layout ---------- */
+main{padding:4px 16px calc(var(--nav-h) + 84px)}
+.view{display:none}
+.view.active{display:block}
+.card{
+  background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:16px;margin-bottom:14px;
+}
+.card h2{font-size:1.02rem;color:var(--ink-2);font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.card h2 .spacer{flex:1}
+
+/* ---------- bottom nav ---------- */
+.tabbar{
+  position:fixed;bottom:0;left:0;right:0;z-index:40;
+  background:var(--card);border-top:1px solid var(--grid);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.tabbar-inner{max-width:520px;margin:0 auto;display:flex}
+.tab{
+  flex:1;padding:8px 0 9px;display:flex;flex-direction:column;align-items:center;gap:2px;
+  color:var(--muted);font-size:.76rem;font-weight:600;
+}
+.tab .ti{font-size:1.45rem;line-height:1.15}
+.tab.active{color:var(--teal-600)}
+
+/* ---------- dashboard ---------- */
+.alert-banner{
+  background:var(--danger-bg);border:1.5px solid #f2b8b5;border-radius:var(--radius);
+  padding:12px 14px;margin-bottom:14px;color:#8f2320;font-weight:600;font-size:.95rem;
+  display:flex;gap:10px;align-items:flex-start;
+}
+.alert-banner .ai{font-size:1.3rem;line-height:1.3}
+.duty-card{display:flex;gap:12px;align-items:center}
+.duty-avatar{
+  width:56px;height:56px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:700;font-size:1.4rem;
+}
+.duty-main{flex:1;min-width:0}
+.duty-label{font-size:.82rem;color:var(--ink-2)}
+.duty-name{font-size:1.35rem;font-weight:800}
+.duty-next{font-size:.88rem;color:var(--ink-2);margin-top:2px}
+.vitals-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.vital-tile{
+  background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:14px 14px 12px;
+}
+.vital-tile .vt-label{font-size:.85rem;color:var(--ink-2);font-weight:600;display:flex;align-items:center;gap:6px}
+.vital-tile .vt-value{font-size:2.05rem;font-weight:800;letter-spacing:-.5px;margin-top:2px;line-height:1.2}
+.vital-tile .vt-value small{font-size:.95rem;font-weight:600;color:var(--ink-2);letter-spacing:0}
+.vital-tile .vt-time{font-size:.76rem;color:var(--muted);margin-top:2px}
+.vital-tile.abn .vt-value{color:var(--danger)}
+.vital-tile .vt-warn{font-size:.8rem;color:var(--danger);font-weight:700}
+.log-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--grid)}
+.log-item:last-child{border-bottom:none}
+.log-dot{width:12px;height:12px;border-radius:50%;flex:none;margin-top:7px;background:var(--teal-500)}
+.log-meta{font-size:.8rem;color:var(--muted)}
+.log-author{font-weight:700;color:var(--ink-2)}
+.log-text{font-size:.98rem;white-space:pre-wrap;word-break:break-word}
+.link-btn{color:var(--teal-600);font-weight:700;font-size:.92rem;padding:6px 4px}
+
+/* FAB */
+.fab{
+  position:fixed;right:calc(50% - 244px);bottom:calc(var(--nav-h) + 16px);z-index:35;
+  background:var(--teal-600);color:#fff;border-radius:99px;box-shadow:0 5px 16px rgba(0,105,92,.35);
+  padding:14px 22px;font-size:1.05rem;font-weight:700;display:flex;align-items:center;gap:6px;
+}
+@media (max-width:560px){.fab{right:18px}}
+.fab:active{background:var(--teal-700)}
+
+/* ---------- forms ---------- */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:.88rem;font-weight:700;color:var(--ink-2);margin-bottom:5px}
+.field input,.field select,.field textarea{
+  width:100%;padding:12px 13px;border:1.5px solid var(--grid);border-radius:12px;
+  background:#fbfdfd;font-size:1.05rem;
+}
+.field textarea{min-height:74px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--teal-500)}
+.field input.abn-input{border-color:var(--danger);background:#fff8f7}
+.field .hint{font-size:.8rem;color:var(--danger);font-weight:700;margin-top:4px;min-height:0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.unit-wrap{position:relative}
+.unit-wrap .unit{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:.9rem;pointer-events:none}
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:6px;width:100%;
+  padding:14px;border-radius:14px;font-size:1.1rem;font-weight:800;
+  background:var(--teal-600);color:#fff;
+}
+.btn:active{background:var(--teal-700)}
+.btn.secondary{background:var(--teal-50);color:var(--teal-700)}
+.btn.danger{background:var(--danger-bg);color:var(--danger)}
+.btn.sm{width:auto;padding:9px 16px;font-size:.95rem;border-radius:11px}
+.btn-row{display:flex;gap:10px}
+.btn-row .btn{flex:1}
+
+/* ---------- record list ---------- */
+.rec-item{padding:12px 0;border-bottom:1px solid var(--grid)}
+.rec-item:last-child{border-bottom:none}
+.rec-head{display:flex;align-items:baseline;gap:8px}
+.rec-time{font-weight:800;font-size:.98rem}
+.rec-by{font-size:.82rem;color:var(--muted);flex:1}
+.rec-del{color:var(--muted);font-size:.85rem;padding:4px 6px}
+.rec-vals{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:4px}
+.rec-val{font-size:.98rem}
+.rec-val b{font-size:1.08rem}
+.rec-val.abn{color:var(--danger)}
+.rec-val.abn b::after{content:" ⚠";font-size:.85rem}
+.rec-note{font-size:.9rem;color:var(--ink-2);margin-top:4px;white-space:pre-wrap;word-break:break-word}
+.rec-flags{font-size:.82rem;color:var(--danger);font-weight:700;margin-top:3px}
+
+/* ---------- charts ---------- */
+.seg{
+  display:flex;background:var(--teal-50);border-radius:12px;padding:4px;margin-bottom:14px;
+}
+.seg button{
+  flex:1;padding:9px 0;border-radius:9px;font-weight:700;font-size:.95rem;color:var(--ink-2);
+}
+.seg button.active{background:var(--card);color:var(--teal-700);box-shadow:0 1px 4px rgba(38,64,60,.12)}
+.chart-card{position:relative}
+.legend{display:flex;gap:14px;font-size:.82rem;color:var(--ink-2);margin-bottom:4px}
+.legend .li{display:flex;align-items:center;gap:5px;font-weight:600}
+.legend .ld{width:10px;height:10px;border-radius:3px}
+.chart-wrap{position:relative}
+.chart-wrap svg{width:100%;height:auto;display:block;touch-action:pan-y}
+.chart-empty{color:var(--muted);font-size:.92rem;text-align:center;padding:26px 0}
+.tooltip{
+  position:absolute;pointer-events:none;background:var(--ink);color:#fff;border-radius:9px;
+  padding:6px 10px;font-size:.8rem;line-height:1.45;white-space:nowrap;z-index:5;
+  transform:translate(-50%,-100%);display:none;box-shadow:0 3px 10px rgba(0,0,0,.25);
+}
+
+/* ---------- schedule ---------- */
+.week-nav{display:flex;align-items:center;gap:6px;margin-bottom:12px}
+.week-nav .wn-title{flex:1;text-align:center;font-weight:800;font-size:1rem}
+.week-nav .icon-btn{background:var(--card);box-shadow:var(--shadow)}
+.today-btn{font-size:.85rem;font-weight:700;color:var(--teal-600);padding:8px 10px;background:var(--card);border-radius:11px;box-shadow:var(--shadow)}
+.day-row{
+  background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+  margin-bottom:10px;padding:11px 14px;display:flex;gap:12px;align-items:flex-start;
+}
+.day-row.today{border:2px solid var(--teal-500)}
+.day-date{flex:none;width:52px;text-align:center}
+.day-date .dw{font-size:.8rem;color:var(--ink-2);font-weight:700}
+.day-date .dd{font-size:1.25rem;font-weight:800;line-height:1.2}
+.day-row.today .day-date .dd{color:var(--teal-600)}
+.day-shifts{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}
+.shift-chip{
+  display:flex;align-items:center;gap:8px;padding:7px 11px;border-radius:11px;
+  color:#fff;font-weight:700;font-size:.95rem;text-align:left;width:100%;
+}
+.shift-chip .sc-time{font-weight:600;font-size:.82rem;opacity:.92;margin-left:auto;flex:none}
+.day-empty{color:var(--muted);font-size:.88rem;padding:6px 0}
+.day-add{flex:none;width:36px;height:36px;border-radius:10px;background:var(--teal-50);color:var(--teal-700);font-size:1.25rem;font-weight:700;display:flex;align-items:center;justify-content:center}
+.member-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--grid)}
+.member-row:last-child{border-bottom:none}
+.member-dot{width:22px;height:22px;border-radius:50%;flex:none}
+.member-name{flex:1;font-weight:700}
+.member-edit{color:var(--teal-600);font-weight:700;font-size:.9rem;padding:6px}
+
+/* ---------- overlays / modals ---------- */
+.overlay{
+  position:fixed;inset:0;z-index:60;background:rgba(28,43,41,.45);display:none;
+  align-items:flex-end;justify-content:center;
+}
+.overlay.show{display:flex}
+.sheet{
+  background:var(--card);width:100%;max-width:520px;border-radius:22px 22px 0 0;
+  padding:20px 18px calc(18px + env(safe-area-inset-bottom));max-height:88vh;overflow-y:auto;
+}
+.sheet h3{font-size:1.15rem;font-weight:800;margin-bottom:14px;display:flex;align-items:center}
+.sheet h3 .close-x{margin-left:auto;font-size:1.3rem;color:var(--muted);padding:2px 8px}
+.quick-times{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.quick-times button{
+  padding:9px 0;border-radius:10px;background:var(--teal-50);color:var(--teal-700);font-weight:700;font-size:.9rem;
+}
+.quick-times button.active{background:var(--teal-600);color:#fff}
+.color-palette{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.color-swatch{width:38px;height:38px;border-radius:50%;border:3px solid transparent}
+.color-swatch.sel{border-color:var(--ink);box-shadow:0 0 0 2px #fff inset}
+
+/* full-screen log overlay */
+.fullpage{
+  position:fixed;inset:0;z-index:55;background:var(--bg);display:none;flex-direction:column;
+}
+.fullpage.show{display:flex}
+.fullpage .fp-head{
+  padding:14px 16px;display:flex;align-items:center;gap:10px;background:var(--card);
+  border-bottom:1px solid var(--grid);
+}
+.fullpage .fp-head h3{font-size:1.1rem;font-weight:800;flex:1}
+.fp-body{flex:1;overflow-y:auto;padding:14px 16px;max-width:520px;margin:0 auto;width:100%}
+.tl-date{font-size:.85rem;font-weight:800;color:var(--ink-2);margin:14px 0 6px;position:sticky;top:0;background:var(--bg);padding:4px 0}
+.tl-item{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:11px 14px;margin-bottom:9px;display:flex;gap:10px}
+.fp-input{
+  background:var(--card);border-top:1px solid var(--grid);
+  padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+}
+.fp-input-inner{max-width:520px;margin:0 auto;display:flex;gap:8px;align-items:flex-end}
+.fp-input textarea{
+  flex:1;border:1.5px solid var(--grid);border-radius:14px;padding:10px 13px;background:#fbfdfd;
+  font-size:1rem;resize:none;min-height:46px;max-height:110px;
+}
+.fp-input textarea:focus{outline:none;border-color:var(--teal-500)}
+.fp-send{background:var(--teal-600);color:#fff;border-radius:13px;padding:11px 18px;font-weight:800;flex:none}
+
+/* ---------- setup screen ---------- */
+.setup{position:fixed;inset:0;z-index:70;background:var(--bg);overflow-y:auto;display:none}
+.setup.show{display:block}
+.setup-inner{max-width:520px;margin:0 auto;padding:36px 20px 40px}
+.setup-logo{font-size:2.6rem;text-align:center}
+.setup h1{text-align:center;font-size:1.5rem;margin:6px 0 4px}
+.setup .sub{text-align:center;color:var(--ink-2);font-size:.95rem;margin-bottom:24px}
+.setup details{margin-top:8px}
+.setup summary{font-size:.9rem;color:var(--teal-600);font-weight:700;cursor:pointer;padding:4px 0}
+
+/* toast */
+.toast{
+  position:fixed;left:50%;bottom:calc(var(--nav-h) + 22px);transform:translateX(-50%);
+  background:var(--ink);color:#fff;padding:11px 20px;border-radius:99px;font-size:.95rem;font-weight:600;
+  z-index:90;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;max-width:92vw;
+  overflow:hidden;text-overflow:ellipsis;
+}
+.toast.show{opacity:1}
+.muted-note{font-size:.83rem;color:var(--muted);margin-top:8px}
+.invite-box{
+  background:var(--teal-50);border-radius:12px;padding:11px 13px;font-size:.8rem;color:var(--ink-2);
+  word-break:break-all;max-height:90px;overflow-y:auto;margin-bottom:10px;
+}
+</style>
+</head>
+<body>
+
+<!-- ======== 首次設定 ======== -->
+<div class="setup" id="setupScreen">
+  <div class="setup-inner">
+    <div class="setup-logo">🩺</div>
+    <h1>家庭照護紀錄</h1>
+    <p class="sub">全家人一起照顧，資料即時互通</p>
+
+    <div class="card">
+      <h2>☁️ 雲端同步模式（推薦）</h2>
+      <p style="font-size:.9rem;color:var(--ink-2);margin-bottom:12px">
+        家人在各自手機上都能看到同一份資料。需要先依照說明建立免費的 Supabase 資料庫（約 10 分鐘，僅需設定一次）。
+      </p>
+      <div class="field"><label>Supabase 網址（Project URL）</label>
+        <input id="suUrl" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off"></div>
+      <div class="field"><label>Supabase 金鑰（anon public key）</label>
+        <input id="suKey" type="text" placeholder="eyJhbGciOi..." autocomplete="off"></div>
+      <div class="field"><label>家庭代碼（自訂，所有家人輸入相同代碼）</label>
+        <input id="suFamily" type="text" placeholder="例如：lin-family-2026" autocomplete="off"></div>
+      <div class="field"><label>病人稱呼</label>
+        <input id="suPatient" type="text" placeholder="例如：阿嬤"></div>
+      <div class="field"><label>您的稱呼（記錄時顯示的名字）</label>
+        <input id="suMe" type="text" placeholder="例如：大姊"></div>
+      <button class="btn" id="btnCloudStart">開始使用雲端同步</button>
+      <details>
+        <summary>還沒有 Supabase？看設定教學</summary>
+        <ol style="font-size:.88rem;color:var(--ink-2);padding-left:20px;margin-top:6px">
+          <li>到 supabase.com 註冊免費帳號並建立專案</li>
+          <li>在專案的 SQL Editor 貼上本專案提供的 setup.sql 並執行</li>
+          <li>到 Settings → API 複製 Project URL 與 anon public key</li>
+          <li>回到這裡貼上，自訂一組家庭代碼即可開始</li>
+        </ol>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>📱 先在這支手機上使用</h2>
+      <p style="font-size:.9rem;color:var(--ink-2);margin-bottom:12px">
+        資料只存在這支手機（本機模式），之後隨時可以在「設定」中改為雲端同步。
+      </p>
+      <div class="field"><label>病人稱呼</label>
+        <input id="localPatient" type="text" placeholder="例如：阿嬤"></div>
+      <div class="field"><label>您的稱呼</label>
+        <input id="localMe" type="text" placeholder="例如：大姊"></div>
+      <button class="btn secondary" id="btnLocalStart">使用本機模式</button>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="appRoot" style="display:none">
+  <header class="topbar">
+    <h1 id="appTitle">家庭照護紀錄</h1>
+    <span class="sync-pill local" id="syncPill">本機</span>
+    <button class="icon-btn" id="btnSettings" aria-label="設定">⚙️</button>
+  </header>
+
+  <main>
+    <!-- ======== 首頁 ======== -->
+    <section class="view active" id="view-home">
+      <div id="homeAlert"></div>
+      <div class="card duty-card" id="dutyCard"></div>
+      <div class="vitals-grid" id="vitalsGrid" style="margin-bottom:14px"></div>
+      <div class="card">
+        <h2>📝 交班日誌 <span class="spacer"></span>
+          <button class="link-btn" id="btnAllLogs">查看全部 ›</button></h2>
+        <div id="homeLogs"></div>
+        <button class="btn secondary" id="btnWriteLog" style="margin-top:10px">✏️ 寫交班留言</button>
+      </div>
+    </section>
+
+    <!-- ======== 紀錄 ======== -->
+    <section class="view" id="view-records">
+      <div class="card">
+        <h2>➕ 新增生命徵象</h2>
+        <form id="vitalForm">
+          <div class="field"><label>日期時間</label>
+            <input type="datetime-local" id="fTime" required></div>
+          <div class="row2">
+            <div class="field"><label>體溫</label>
+              <div class="unit-wrap"><input type="text" inputmode="decimal" id="fTemp" placeholder="36.5"><span class="unit">°C</span></div>
+              <div class="hint" id="hTemp"></div></div>
+            <div class="field"><label>血氧 SpO₂</label>
+              <div class="unit-wrap"><input type="text" inputmode="numeric" id="fSpo2" placeholder="98"><span class="unit">%</span></div>
+              <div class="hint" id="hSpo2"></div></div>
+          </div>
+          <div class="row2">
+            <div class="field"><label>收縮壓（高壓）</label>
+              <div class="unit-wrap"><input type="text" inputmode="numeric" id="fSys" placeholder="120"><span class="unit">mmHg</span></div>
+              <div class="hint" id="hSys"></div></div>
+            <div class="field"><label>舒張壓（低壓）</label>
+              <div class="unit-wrap"><input type="text" inputmode="numeric" id="fDia" placeholder="80"><span class="unit">mmHg</span></div>
+              <div class="hint" id="hDia"></div></div>
+          </div>
+          <div class="field"><label>心率</label>
+            <div class="unit-wrap"><input type="text" inputmode="numeric" id="fHr" placeholder="72"><span class="unit">次/分</span></div>
+            <div class="hint" id="hHr"></div></div>
+          <div class="field"><label>記錄者</label>
+            <input type="text" id="fRecorder" list="memberNames" placeholder="您的稱呼"></div>
+          <datalist id="memberNames"></datalist>
+          <div class="field"><label>備註（用藥、進食、排便、精神狀況…）</label>
+            <textarea id="fNote" placeholder="例如：早上服用降壓藥，午餐吃八分滿"></textarea></div>
+          <button class="btn" type="submit">💾 儲存紀錄</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>📋 歷史紀錄 <span class="spacer"></span>
+          <button class="link-btn" id="btnExportCsv">⬇ 匯出 CSV</button></h2>
+        <div id="recList"></div>
+      </div>
+    </section>
+
+    <!-- ======== 圖表 ======== -->
+    <section class="view" id="view-charts">
+      <div class="seg" id="rangeSeg">
+        <button data-range="today">今日</button>
+        <button data-range="7" class="active">7 天</button>
+        <button data-range="30">30 天</button>
+      </div>
+      <div id="chartsArea"></div>
+    </section>
+
+    <!-- ======== 排班 ======== -->
+    <section class="view" id="view-schedule">
+      <div class="week-nav">
+        <button class="icon-btn" id="btnPrevWeek" aria-label="上一週">‹</button>
+        <div class="wn-title" id="weekTitle"></div>
+        <button class="icon-btn" id="btnNextWeek" aria-label="下一週">›</button>
+        <button class="today-btn" id="btnThisWeek">回今天</button>
+      </div>
+      <div id="weekList"></div>
+      <div class="card">
+        <h2>👨‍👩‍👧 家人成員 <span class="spacer"></span>
+          <button class="link-btn" id="btnAddMember">＋ 新增</button></h2>
+        <div id="memberList"></div>
+        <p class="muted-note">每位家人有自己的代表色，排班表用顏色一眼分辨。</p>
+      </div>
+    </section>
+  </main>
+
+  <button class="fab" id="fab">＋ 新增紀錄</button>
+
+  <nav class="tabbar">
+    <div class="tabbar-inner">
+      <button class="tab active" data-tab="home"><span class="ti">🏠</span>首頁</button>
+      <button class="tab" data-tab="records"><span class="ti">📝</span>紀錄</button>
+      <button class="tab" data-tab="charts"><span class="ti">📈</span>圖表</button>
+      <button class="tab" data-tab="schedule"><span class="ti">📅</span>排班</button>
+    </div>
+  </nav>
+</div>
+
+<!-- ======== 日誌全頁 ======== -->
+<div class="fullpage" id="logPage">
+  <div class="fp-head">
+    <button class="icon-btn" id="btnCloseLogs" aria-label="返回">‹</button>
+    <h3>交班日誌</h3>
+  </div>
+  <div class="fp-body" id="logTimeline"></div>
+  <div class="fp-input">
+    <div class="fp-input-inner">
+      <textarea id="logInput" rows="1" placeholder="留言給下一班的家人…"></textarea>
+      <button class="fp-send" id="btnSendLog">送出</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======== 班次編輯 ======== -->
+<div class="overlay" id="shiftModal">
+  <div class="sheet">
+    <h3 id="shiftModalTitle">新增班次<button class="close-x" data-close="shiftModal">✕</button></h3>
+    <div class="field"><label>日期</label><input type="date" id="sfDate"></div>
+    <label style="display:block;font-size:.88rem;font-weight:700;color:var(--ink-2);margin-bottom:5px">快速選擇時段</label>
+    <div class="quick-times" id="quickTimes">
+      <button data-s="08:00" data-e="16:00">早班</button>
+      <button data-s="16:00" data-e="23:59">晚班</button>
+      <button data-s="00:00" data-e="08:00">夜班</button>
+      <button data-s="00:00" data-e="23:59">整日</button>
+    </div>
+    <div class="row2">
+      <div class="field"><label>開始時間</label><input type="time" id="sfStart" value="08:00"></div>
+      <div class="field"><label>結束時間</label><input type="time" id="sfEnd" value="16:00"></div>
+    </div>
+    <div class="field"><label>負責家人</label><select id="sfMember"></select></div>
+    <div class="btn-row">
+      <button class="btn danger" id="btnDeleteShift" style="display:none">刪除</button>
+      <button class="btn" id="btnSaveShift">儲存班次</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======== 家人編輯 ======== -->
+<div class="overlay" id="memberModal">
+  <div class="sheet">
+    <h3 id="memberModalTitle">新增家人<button class="close-x" data-close="memberModal">✕</button></h3>
+    <div class="field"><label>稱呼</label><input type="text" id="mfName" placeholder="例如：二哥"></div>
+    <div class="field"><label>代表色</label><div class="color-palette" id="colorPalette"></div></div>
+    <div class="btn-row">
+      <button class="btn danger" id="btnDeleteMember" style="display:none">刪除</button>
+      <button class="btn" id="btnSaveMember">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======== 設定 ======== -->
+<div class="overlay" id="settingsModal">
+  <div class="sheet">
+    <h3>設定<button class="close-x" data-close="settingsModal">✕</button></h3>
+    <div class="field"><label>病人稱呼</label><input type="text" id="setPatient"></div>
+    <div class="field"><label>我的稱呼（預設記錄者）</label><input type="text" id="setMe"></div>
+    <div id="cloudSettings"></div>
+    <button class="btn" id="btnSaveSettings" style="margin-top:4px">儲存設定</button>
+    <button class="btn danger" id="btnResetApp" style="margin-top:10px">重設此裝置（清除本機設定）</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* ============ 小工具 ============ */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2, '0');
+const uuid = () => (crypto.randomUUID ? crypto.randomUUID() :
+  'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16);
+  }));
+const WEEKDAYS = ['週日','週一','週二','週三','週四','週五','週六'];
+const dateKey = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const fmtDT = iso => { const d = new Date(iso); return `${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const fmtTimeOnly = iso => { const d = new Date(iso); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const fmtDateZh = d => `${d.getMonth()+1}月${d.getDate()}日（${WEEKDAYS[d.getDay()]}）`;
+const nowLocalInput = () => { const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const hm = (t) => t ? t.slice(0,5) : '';
+const lsGet = (k, fb) => { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+const MEMBER_COLORS = ['#2a78d6','#008300','#e87ba4','#eda100','#1baf7a','#eb6834','#4a3aa7','#e34948'];
+
+/* ============ 設定與狀態 ============ */
+let config = lsGet('takecare_config', null);
+const isCloud = () => !!(config && config.mode === 'cloud' && config.url && config.key && config.family);
+
+const state = {
+  tab: 'home',
+  data: { vitals: [], members: [], shifts: [], logs: [] },
+  chartRange: '7',
+  weekOffset: 0,
+  sync: 'local',       // local | ok | offline | syncing
+  editingShift: null,  // shift row 或 null（新增）
+  editingMember: null,
+  pickedColor: MEMBER_COLORS[0],
+};
+
+function setSync(s) {
+  state.sync = s;
+  const pill = $('#syncPill');
+  const map = { local: ['本機', 'local'], ok: ['☁ 已同步', ''], offline: ['⚠ 離線', 'offline'], syncing: ['同步中…', ''] };
+  const [text, cls] = map[s] || map.local;
+  pill.textContent = text;
+  pill.className = 'sync-pill' + (cls ? ' ' + cls : '');
+}
+
+/* ============ 資料層（雲端 Supabase REST / 本機 localStorage，介面相同） ============ */
+const ORDER = { vitals: 'ts.desc', logs: 'ts.desc', members: 'created_at.asc', shifts: 'date.asc' };
+
+async function sbFetch(table, { method = 'GET', query = '', body } = {}) {
+  const url = `${config.url.replace(/\/$/, '')}/rest/v1/${table}${query ? '?' + query : ''}`;
+  const res = await fetch(url, {
+    method,
+    headers: {
+      apikey: config.key,
+      Authorization: 'Bearer ' + config.key,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+  if (res.status === 204) return null;
+  return res.json();
+}
+const famQ = () => `family_code=eq.${encodeURIComponent(config.family)}`;
+
+const DB = {
+  async list(table) {
+    if (!isCloud()) return lsGet('takecare_' + table, []);
+    try {
+      const rows = await sbFetch(table, { query: `select=*&${famQ()}&order=${ORDER[table]}` });
+      lsSet('takecare_cache_' + table, rows);
+      return rows;
+    } catch (e) {
+      console.warn('list failed, using cache', table, e);
+      setSync('offline');
+      return lsGet('takecare_cache_' + table, []);
+    }
+  },
+  async insert(table, row) {
+    if (!isCloud()) {
+      row = { ...row, id: uuid(), created_at: new Date().toISOString() };
+      const arr = lsGet('takecare_' + table, []); arr.push(row); lsSet('takecare_' + table, arr);
+      return row;
+    }
+    const rows = await sbFetch(table, { method: 'POST', body: { ...row, family_code: config.family } });
+    return rows[0];
+  },
+  async update(table, id, patch) {
+    if (!isCloud()) {
+      const arr = lsGet('takecare_' + table, []);
+      const i = arr.findIndex(r => r.id === id);
+      if (i >= 0) { arr[i] = { ...arr[i], ...patch }; lsSet('takecare_' + table, arr); }
+      return;
+    }
+    await sbFetch(table, { method: 'PATCH', query: `id=eq.${id}&${famQ()}`, body: patch });
+  },
+  async remove(table, id) {
+    if (!isCloud()) {
+      lsSet('takecare_' + table, lsGet('takecare_' + table, []).filter(r => r.id !== id));
+      return;
+    }
+    await sbFetch(table, { method: 'DELETE', query: `id=eq.${id}&${famQ()}` });
+  },
+};
+
+async function refreshAll(showStatus) {
+  if (isCloud() && showStatus) setSync('syncing');
+  const [vitals, members, shifts, logs] = await Promise.all(
+    ['vitals', 'members', 'shifts', 'logs'].map(t => DB.list(t)));
+  state.data = { vitals, members, shifts, logs };
+  // 客戶端統一排序，本機/快取資料也一致
+  const byTsDesc = (a, b) => (new Date(b.ts) - new Date(a.ts)) || (new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  state.data.vitals.sort(byTsDesc);
+  state.data.logs.sort(byTsDesc);
+  state.data.shifts.sort((a, b) => (a.date + (a.start_time||'')).localeCompare(b.date + (b.start_time||'')));
+  if (isCloud() && state.sync !== 'offline') setSync('ok');
+  renderAll();
+}
+
+/* 異動後：先重抓再畫（雲端模式確保拿到伺服器版本） */
+async function mutate(fn, okMsg) {
+  try {
+    await fn();
+    if (okMsg) toast(okMsg);
+    await refreshAll();
+    return true;
+  } catch (e) {
+    console.error(e);
+    toast('⚠ 儲存失敗，請確認網路後再試');
+    return false;
+  }
+}
+
+/* ============ 異常判定 ============ */
+function abnTemp(v) { return v >= 38 ? '發燒' : (v < 35 ? '體溫過低' : null); }
+function abnSys(v)  { return v >= 140 ? '血壓偏高' : (v < 90 ? '血壓偏低' : null); }
+function abnSpo2(v) { return v < 94 ? '血氧偏低' : null; }
+function abnHr(v)   { return v > 100 ? '心跳過快' : (v < 60 ? '心跳過慢' : null); }
+
+/* 一筆紀錄的異常清單，如 ['發燒','血氧偏低'] */
+function vitalIssues(v) {
+  const out = [];
+  if (v.temp != null) { const m = abnTemp(+v.temp); if (m) out.push(m); }
+  if (v.sys  != null) { const m = abnSys(+v.sys);   if (m) out.push(m); }
+  if (v.spo2 != null) { const m = abnSpo2(+v.spo2); if (m) out.push(m); }
+  if (v.hr   != null) { const m = abnHr(+v.hr);     if (m) out.push(m); }
+  return out;
+}
+
+/* ============ 分頁切換 ============ */
+function switchTab(tab) {
+  state.tab = tab;
+  $$('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + tab));
+  $('#fab').style.display = tab === 'home' ? 'flex' : 'none';
+  if (tab === 'records' && document.activeElement !== $('#fTime')) $('#fTime').value = nowLocalInput();
+  if (tab === 'charts') renderCharts();
+  window.scrollTo(0, 0);
+}
+$$('.tab').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+$('#fab').addEventListener('click', () => { switchTab('records'); $('#fTemp').focus(); });
+
+/* ============ 首頁 ============ */
+function memberByName(name) { return state.data.members.find(m => m.name === name); }
+function memberById(id) { return state.data.members.find(m => m.id === id); }
+
+function findDuty() {
+  const now = new Date();
+  const today = dateKey(now);
+  const nowHM = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const shifts = state.data.shifts;
+  const current = shifts.find(s => s.date === today && hm(s.start_time) <= nowHM && nowHM < hm(s.end_time));
+  const next = shifts.find(s =>
+    (s.date === today && hm(s.start_time) > nowHM) || s.date > today);
+  return { current, next };
+}
+
+function latestMetric(key) {
+  return state.data.vitals.find(v => v[key] != null && v[key] !== '');
+}
+
+function renderHome() {
+  // 值班卡
+  const { current, next } = findDuty();
+  const dutyEl = $('#dutyCard');
+  const cm = current && memberById(current.member_id);
+  const nm = next && memberById(next.member_id);
+  const nextTxt = next
+    ? `下一班：${nm ? esc(nm.name) : '未指定'}（${next.date === dateKey(new Date()) ? '今天' : esc(next.date.slice(5).replace('-','/'))} ${esc(hm(next.start_time))}–${esc(hm(next.end_time))}）`
+    : '下一班：尚未排班';
+  if (cm) {
+    dutyEl.innerHTML = `
+      <div class="duty-avatar" style="background:${esc(cm.color)}">${esc(cm.name.slice(0,1))}</div>
+      <div class="duty-main">
+        <div class="duty-label">目前值班</div>
+        <div class="duty-name">${esc(cm.name)} <small style="font-size:.85rem;color:var(--ink-2);font-weight:600">${esc(hm(current.start_time))}–${esc(hm(current.end_time))}</small></div>
+        <div class="duty-next">${nextTxt}</div>
+      </div>`;
+  } else {
+    dutyEl.innerHTML = `
+      <div class="duty-avatar" style="background:var(--teal-100);color:var(--teal-700)">？</div>
+      <div class="duty-main">
+        <div class="duty-label">目前值班</div>
+        <div class="duty-name" style="color:var(--ink-2)">目前無人值班</div>
+        <div class="duty-next">${nextTxt}</div>
+      </div>`;
+  }
+
+  // 最新數值 2×2
+  const tiles = [
+    { key: 'temp', label: '🌡️ 體溫', unit: '°C', check: abnTemp, fmt: v => (+v).toFixed(1) },
+    { key: 'bp',   label: '🫀 血壓 <small style="font-weight:600;color:var(--muted)">mmHg</small>', unit: 'mmHg' },
+    { key: 'spo2', label: '💨 血氧', unit: '%', check: abnSpo2 },
+    { key: 'hr',   label: '💓 心率', unit: '次/分', check: abnHr },
+  ];
+  const alerts = [];
+  $('#vitalsGrid').innerHTML = tiles.map(t => {
+    let rec, valHtml = '<span style="color:var(--muted);font-size:1.3rem">－</span>', warn = '', abn = false, timeTxt = '';
+    if (t.key === 'bp') {
+      rec = state.data.vitals.find(v => v.sys != null || v.dia != null);
+      if (rec) {
+        const m1 = rec.sys != null ? abnSys(+rec.sys) : null;
+        if (m1) { abn = true; alerts.push(m1 + `（收縮壓 ${rec.sys}）`); warn = m1; }
+        valHtml = `${rec.sys ?? '–'}<small>/</small>${rec.dia ?? '–'}`;
+        timeTxt = fmtDT(rec.ts);
+      }
+    } else {
+      rec = latestMetric(t.key);
+      if (rec) {
+        const val = +rec[t.key];
+        const m = t.check ? t.check(val) : null;
+        if (m) { abn = true; alerts.push(`${m}（${val}${t.unit === '°C' ? '°C' : t.unit === '%' ? '%' : ''}）`); warn = m; }
+        valHtml = `${t.fmt ? t.fmt(val) : val} <small>${t.unit}</small>`;
+        timeTxt = fmtDT(rec.ts);
+      }
+    }
+    return `<div class="vital-tile${abn ? ' abn' : ''}">
+      <div class="vt-label">${t.label}</div>
+      <div class="vt-value">${valHtml}</div>
+      ${warn ? `<div class="vt-warn">⚠ ${esc(warn)}</div>` : ''}
+      <div class="vt-time">${timeTxt ? esc(timeTxt) : '尚無紀錄'}</div>
+    </div>`;
+  }).join('');
+
+  // 警示橫幅
+  $('#homeAlert').innerHTML = alerts.length
+    ? `<div class="alert-banner"><span class="ai">⚠️</span><span>最新數值異常：${esc(alerts.join('、'))}。請留意病人狀況，必要時聯絡醫護。</span></div>`
+    : '';
+
+  // 最近日誌
+  const logs = state.data.logs.slice(0, 3);
+  $('#homeLogs').innerHTML = logs.length ? logs.map(logItemHtml).join('')
+    : '<p style="color:var(--muted);font-size:.92rem">還沒有留言，寫下第一則交班備註吧。</p>';
+}
+
+function logItemHtml(l) {
+  const m = memberByName(l.author);
+  return `<div class="log-item">
+    <div class="log-dot" style="background:${m ? esc(m.color) : 'var(--teal-500)'}"></div>
+    <div style="flex:1;min-width:0">
+      <div class="log-meta"><span class="log-author">${esc(l.author || '家人')}</span> · ${esc(fmtDT(l.ts))}</div>
+      <div class="log-text">${esc(l.text)}</div>
+    </div>
+  </div>`;
+}
+
+/* ============ 紀錄頁 ============ */
+const numOrNull = s => {
+  s = String(s ?? '').trim();
+  if (s === '') return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+};
+
+/* 輸入即時異常提示 */
+const liveChecks = [
+  ['#fTemp', '#hTemp', abnTemp], ['#fSys', '#hSys', abnSys],
+  ['#fSpo2', '#hSpo2', abnSpo2], ['#fHr', '#hHr', abnHr],
+];
+liveChecks.forEach(([inp, hint, check]) => {
+  $(inp).addEventListener('input', () => {
+    const v = numOrNull($(inp).value);
+    const msg = v == null ? null : check(v);
+    $(hint).textContent = msg ? '⚠ ' + msg : '';
+    $(inp).classList.toggle('abn-input', !!msg);
+  });
+});
+
+$('#vitalForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const row = {
+    ts: new Date($('#fTime').value || Date.now()).toISOString(),
+    temp: numOrNull($('#fTemp').value),
+    sys: numOrNull($('#fSys').value),
+    dia: numOrNull($('#fDia').value),
+    spo2: numOrNull($('#fSpo2').value),
+    hr: numOrNull($('#fHr').value),
+    recorder: $('#fRecorder').value.trim() || lsGet('takecare_me', ''),
+    note: $('#fNote').value.trim(),
+  };
+  if (row.temp == null && row.sys == null && row.dia == null && row.spo2 == null && row.hr == null && !row.note) {
+    toast('請至少填一項數值或備註'); return;
+  }
+  if (row.recorder) lsSet('takecare_me', row.recorder);
+  const ok = await mutate(() => DB.insert('vitals', row), '✅ 已儲存紀錄');
+  if (ok) {
+    ['#fTemp','#fSys','#fDia','#fSpo2','#fHr','#fNote'].forEach(s => $(s).value = '');
+    liveChecks.forEach(([inp, hint]) => { $(hint).textContent = ''; $(inp).classList.remove('abn-input'); });
+    $('#fTime').value = nowLocalInput();
+    switchTab('home');
+  }
+});
+
+function renderRecords() {
+  $('#fRecorder').value = $('#fRecorder').value || lsGet('takecare_me', '');
+  $('#memberNames').innerHTML = state.data.members.map(m => `<option value="${esc(m.name)}">`).join('');
+  if (!$('#fTime').value) $('#fTime').value = nowLocalInput();
+
+  const list = state.data.vitals;
+  $('#recList').innerHTML = list.length ? list.slice(0, 100).map(v => {
+    const issues = vitalIssues(v);
+    const parts = [];
+    if (v.temp != null) parts.push(valHtml('體溫', (+v.temp).toFixed(1) + '°C', abnTemp(+v.temp)));
+    if (v.sys != null || v.dia != null)
+      parts.push(valHtml('血壓', `${v.sys ?? '–'}/${v.dia ?? '–'}`, v.sys != null ? abnSys(+v.sys) : null));
+    if (v.spo2 != null) parts.push(valHtml('血氧', v.spo2 + '%', abnSpo2(+v.spo2)));
+    if (v.hr != null) parts.push(valHtml('心率', v.hr, abnHr(+v.hr)));
+    return `<div class="rec-item">
+      <div class="rec-head">
+        <span class="rec-time">${esc(fmtDT(v.ts))}</span>
+        <span class="rec-by">${esc(v.recorder || '')}</span>
+        <button class="rec-del" data-del-vital="${esc(v.id)}">刪除</button>
+      </div>
+      <div class="rec-vals">${parts.join('')}</div>
+      ${issues.length ? `<div class="rec-flags">⚠ ${esc(issues.join('、'))}</div>` : ''}
+      ${v.note ? `<div class="rec-note">${esc(v.note)}</div>` : ''}
+    </div>`;
+  }).join('') : '<p style="color:var(--muted)">尚無紀錄，從上方表單新增第一筆吧。</p>';
+}
+function valHtml(label, val, abnMsg) {
+  return `<span class="rec-val${abnMsg ? ' abn' : ''}">${label} <b>${esc(String(val))}</b></span>`;
+}
+$('#recList').addEventListener('click', e => {
+  const id = e.target.dataset?.delVital;
+  if (id && confirm('確定要刪除這筆紀錄嗎？')) mutate(() => DB.remove('vitals', id), '已刪除');
+});
+
+/* CSV 匯出（UTF-8 BOM，Excel 中文不亂碼） */
+function csvCell(s) {
+  s = String(s ?? '');
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function downloadCsv(filename, rows) {
+  const csv = '\uFEFF' + rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+$('#btnExportCsv').addEventListener('click', () => {
+  const d = new Date(), stamp = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+  const vRows = [['日期時間','體溫(°C)','收縮壓(mmHg)','舒張壓(mmHg)','血氧SpO2(%)','心率(次/分)','記錄者','備註','異常項目']];
+  [...state.data.vitals].reverse().forEach(v => {
+    const dt = new Date(v.ts);
+    vRows.push([
+      `${dt.getFullYear()}/${pad(dt.getMonth()+1)}/${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`,
+      v.temp ?? '', v.sys ?? '', v.dia ?? '', v.spo2 ?? '', v.hr ?? '',
+      v.recorder ?? '', v.note ?? '', vitalIssues(v).join('、'),
+    ]);
+  });
+  downloadCsv(`照護紀錄_生命徵象_${stamp}.csv`, vRows);
+  if (state.data.logs.length) {
+    const lRows = [['日期時間','留言者','內容']];
+    [...state.data.logs].reverse().forEach(l => {
+      const dt = new Date(l.ts);
+      lRows.push([`${dt.getFullYear()}/${pad(dt.getMonth()+1)}/${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`, l.author ?? '', l.text ?? '']);
+    });
+    downloadCsv(`照護紀錄_日誌_${stamp}.csv`, lRows);
+  }
+  toast('已匯出 CSV，可傳給醫師參考');
+});
+
+/* ============ 圖表頁 ============ */
+$('#rangeSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  state.chartRange = b.dataset.range;
+  $$('#rangeSeg button').forEach(x => x.classList.toggle('active', x === b));
+  renderCharts();
+});
+
+function chartWindow() {
+  const now = new Date();
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1); // 明日 00:00
+  let start;
+  if (state.chartRange === 'today') start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  else start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (+state.chartRange - 1));
+  return { start, end };
+}
+
+const CHART_DEFS = [
+  { id: 'temp', title: '🌡️ 體溫（°C）', yPad: [35.5, 37.8],
+    series: [{ key: 'temp', name: '體溫', color: 'var(--series-1)', colorHex: '#2a78d6', check: abnTemp }],
+    bands: [{ from: 38, to: Infinity }, { from: -Infinity, to: 35 }], decimals: 1 },
+  { id: 'bp', title: '🫀 血壓（mmHg）', yPad: [70, 140],
+    series: [
+      { key: 'sys', name: '收縮壓', color: 'var(--series-1)', colorHex: '#2a78d6', check: abnSys },
+      { key: 'dia', name: '舒張壓', color: 'var(--series-2)', colorHex: '#008300', check: () => null },
+    ], bands: [], decimals: 0 },
+  { id: 'spo2', title: '💨 血氧 SpO₂（%）', yPad: [92, 100],
+    series: [{ key: 'spo2', name: '血氧', color: 'var(--series-1)', colorHex: '#2a78d6', check: abnSpo2 }],
+    bands: [{ from: -Infinity, to: 94 }], decimals: 0 },
+  { id: 'hr', title: '💓 心率（次/分）', yPad: [55, 105],
+    series: [{ key: 'hr', name: '心率', color: 'var(--series-1)', colorHex: '#2a78d6', check: abnHr }],
+    bands: [{ from: 100, to: Infinity }, { from: -Infinity, to: 60 }], decimals: 0 },
+];
+
+function renderCharts() {
+  const { start, end } = chartWindow();
+  const inWindow = state.data.vitals.filter(v => {
+    const t = new Date(v.ts); return t >= start && t < end;
+  });
+  $('#chartsArea').innerHTML = CHART_DEFS.map(def => {
+    const seriesData = def.series.map(s => ({
+      ...s,
+      points: inWindow.filter(v => v[s.key] != null)
+        .map(v => ({ t: new Date(v.ts).getTime(), v: +v[s.key] }))
+        .sort((a, b) => a.t - b.t),
+    }));
+    const hasData = seriesData.some(s => s.points.length);
+    const legend = def.series.length > 1
+      ? `<div class="legend">${def.series.map(s =>
+          `<span class="li"><span class="ld" style="background:${s.color}"></span>${esc(s.name)}</span>`).join('')}</div>`
+      : '';
+    return `<div class="card chart-card">
+      <h2>${def.title}</h2>${legend}
+      <div class="chart-wrap" data-chart="${def.id}">
+        ${hasData ? chartSvg(def, seriesData, start.getTime(), end.getTime()) : '<div class="chart-empty">此期間尚無資料</div>'}
+        <div class="tooltip"></div>
+      </div>
+    </div>`;
+  }).join('');
+  // 提供 hover/tap 查值
+  $$('.chart-wrap').forEach(wrap => {
+    const def = CHART_DEFS.find(d => d.id === wrap.dataset.chart);
+    attachTooltip(wrap, def);
+  });
+}
+
+const CW = 360, CH = 190, PL = 38, PR = 10, PT = 10, PB = 26; // viewBox 與留白
+
+function chartSvg(def, seriesData, t0, t1) {
+  const allVals = seriesData.flatMap(s => s.points.map(p => p.v));
+  let yMin = Math.min(def.yPad[0], ...allVals);
+  let yMax = Math.max(def.yPad[1], ...allVals);
+  const padY = (yMax - yMin) * 0.08 || 1;
+  yMin -= padY; yMax += padY;
+  const X = t => PL + (t - t0) / (t1 - t0) * (CW - PL - PR);
+  const Y = v => PT + (yMax - v) / (yMax - yMin) * (CH - PT - PB);
+
+  // 水平格線 + Y 刻度（4 條）
+  let grid = '';
+  for (let i = 0; i <= 3; i++) {
+    const v = yMin + (yMax - yMin) * i / 3;
+    const y = Y(v);
+    grid += `<line x1="${PL}" y1="${y}" x2="${CW - PR}" y2="${y}" stroke="var(--grid)" stroke-width="1"/>` +
+      `<text x="${PL - 5}" y="${y + 3.5}" text-anchor="end" font-size="9.5" fill="#8a9996">${v.toFixed(def.decimals)}</text>`;
+  }
+  // X 刻度
+  let xticks = '';
+  const dayMs = 864e5, span = t1 - t0;
+  if (state.chartRange === 'today') {
+    for (let h = 0; h <= 24; h += 6) {
+      const x = X(t0 + h * 36e5);
+      xticks += `<text x="${x}" y="${CH - 8}" text-anchor="middle" font-size="9.5" fill="#8a9996">${h}時</text>`;
+    }
+  } else {
+    const days = Math.round(span / dayMs);
+    const step = days > 10 ? 5 : 1;
+    for (let i = 0; i < days; i += step) {
+      const d = new Date(t0 + i * dayMs + dayMs / 2);
+      const x = X(t0 + i * dayMs + dayMs / 2);
+      xticks += `<text x="${x}" y="${CH - 8}" text-anchor="middle" font-size="9.5" fill="#8a9996">${d.getMonth()+1}/${d.getDate()}</text>`;
+    }
+  }
+  // 異常區間淡紅背景
+  let bands = '';
+  for (const b of def.bands) {
+    const top = Math.min(yMax, b.to === Infinity ? yMax : b.to);
+    const bot = Math.max(yMin, b.from === -Infinity ? yMin : b.from);
+    if (b.from !== -Infinity && b.to === Infinity) { // 高於 from
+      if (yMax > b.from) bands += bandRect(Y(yMax), Y(Math.max(b.from, yMin)));
+    } else if (b.from === -Infinity && b.to !== Infinity) { // 低於 to
+      if (yMin < b.to) bands += bandRect(Y(Math.min(b.to, yMax)), Y(yMin));
+    } else if (top > bot) bands += bandRect(Y(top), Y(bot));
+  }
+  function bandRect(yTop, yBot) {
+    return `<rect x="${PL}" y="${yTop}" width="${CW - PL - PR}" height="${Math.max(0, yBot - yTop)}" fill="#d03b3b" opacity="0.07"/>`;
+  }
+  // 折線與資料點
+  let lines = '';
+  for (const s of seriesData) {
+    if (!s.points.length) continue;
+    const path = s.points.map((p, i) => `${i ? 'L' : 'M'}${X(p.t).toFixed(1)},${Y(p.v).toFixed(1)}`).join('');
+    lines += `<path d="${path}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    for (const p of s.points) {
+      const abn = s.check(p.v);
+      lines += `<circle cx="${X(p.t).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="4" fill="${abn ? '#d03b3b' : s.color}" stroke="#ffffff" stroke-width="2"/>`;
+    }
+  }
+  return `<svg viewBox="0 0 ${CW} ${CH}" role="img" aria-label="${esc(def.title)}趨勢圖">
+    ${bands}${grid}
+    <line x1="${PL}" y1="${CH - PB}" x2="${CW - PR}" y2="${CH - PB}" stroke="#c9d4d2" stroke-width="1"/>
+    ${xticks}${lines}
+  </svg>`;
+}
+
+function attachTooltip(wrap, def) {
+  const svg = wrap.querySelector('svg');
+  if (!svg) return;
+  const tip = wrap.querySelector('.tooltip');
+  const { start, end } = chartWindow();
+  const t0 = start.getTime(), t1 = end.getTime();
+  const seriesData = def.series.map(s => ({
+    ...s,
+    points: state.data.vitals.filter(v => v[s.key] != null &&
+      new Date(v.ts).getTime() >= t0 && new Date(v.ts).getTime() < t1)
+      .map(v => ({ t: new Date(v.ts).getTime(), v: +v[s.key] })),
+  }));
+  const move = ev => {
+    const rect = svg.getBoundingClientRect();
+    const px = (ev.clientX - rect.left) / rect.width * CW;
+    let best = null;
+    for (const s of seriesData) for (const p of s.points) {
+      const x = PL + (p.t - t0) / (t1 - t0) * (CW - PL - PR);
+      const d = Math.abs(x - px);
+      if (d < 22 && (!best || d < best.d)) best = { d, t: p.t, x };
+    }
+    if (!best) { tip.style.display = 'none'; return; }
+    const vals = seriesData.map(s => {
+      const p = s.points.find(p => p.t === best.t);
+      return p ? `${s.name} <b>${p.v}</b>` : null;
+    }).filter(Boolean).join('　');
+    tip.innerHTML = `${esc(fmtDT(new Date(best.t).toISOString()))}<br>${vals}`;
+    tip.style.left = (best.x / CW * rect.width) + 'px';
+    tip.style.top = '6px';
+    tip.style.display = 'block';
+  };
+  svg.addEventListener('pointermove', move);
+  svg.addEventListener('pointerdown', move);
+  svg.addEventListener('pointerleave', () => tip.style.display = 'none');
+}
+
+/* ============ 排班頁 ============ */
+function weekStart(offset) {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dow = (d.getDay() + 6) % 7; // 週一為 0
+  d.setDate(d.getDate() - dow + offset * 7);
+  return d;
+}
+
+function renderSchedule() {
+  const ws = weekStart(state.weekOffset);
+  const we = new Date(ws); we.setDate(we.getDate() + 6);
+  $('#weekTitle').textContent =
+    `${ws.getMonth()+1}/${ws.getDate()} – ${we.getMonth()+1}/${we.getDate()}` +
+    (state.weekOffset === 0 ? '（本週）' : '');
+  const todayK = dateKey(new Date());
+  let html = '';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(ws); d.setDate(d.getDate() + i);
+    const k = dateKey(d);
+    const shifts = state.data.shifts.filter(s => s.date === k);
+    html += `<div class="day-row${k === todayK ? ' today' : ''}">
+      <div class="day-date"><div class="dw">${WEEKDAYS[d.getDay()]}</div><div class="dd">${d.getDate()}</div></div>
+      <div class="day-shifts">
+        ${shifts.length ? shifts.map(s => {
+          const m = memberById(s.member_id);
+          return `<button class="shift-chip" style="background:${m ? esc(m.color) : '#8a9996'}" data-shift="${esc(s.id)}">
+            ${esc(m ? m.name : '（已移除）')}<span class="sc-time">${esc(hm(s.start_time))}–${esc(hm(s.end_time))}</span>
+          </button>`;
+        }).join('') : '<div class="day-empty">尚未排班</div>'}
+      </div>
+      <button class="day-add" data-add-shift="${k}" aria-label="新增班次">＋</button>
+    </div>`;
+  }
+  $('#weekList').innerHTML = html;
+
+  $('#memberList').innerHTML = state.data.members.length ? state.data.members.map(m =>
+    `<div class="member-row">
+      <div class="member-dot" style="background:${esc(m.color)}"></div>
+      <div class="member-name">${esc(m.name)}</div>
+      <button class="member-edit" data-edit-member="${esc(m.id)}">編輯</button>
+    </div>`).join('')
+    : '<p style="color:var(--muted);font-size:.92rem">尚未新增家人，點右上「＋ 新增」。</p>';
+}
+
+$('#btnPrevWeek').addEventListener('click', () => { state.weekOffset--; renderSchedule(); });
+$('#btnNextWeek').addEventListener('click', () => { state.weekOffset++; renderSchedule(); });
+$('#btnThisWeek').addEventListener('click', () => { state.weekOffset = 0; renderSchedule(); });
+
+$('#weekList').addEventListener('click', e => {
+  const addDate = e.target.closest('[data-add-shift]')?.dataset.addShift;
+  const shiftId = e.target.closest('[data-shift]')?.dataset.shift;
+  if (addDate) openShiftModal(null, addDate);
+  else if (shiftId) {
+    const s = state.data.shifts.find(x => x.id === shiftId);
+    if (s) openShiftModal(s);
+  }
+});
+
+function openShiftModal(shift, date) {
+  if (!state.data.members.length) { toast('請先在下方新增家人成員'); return; }
+  state.editingShift = shift;
+  $('#shiftModalTitle').childNodes[0].textContent = shift ? '編輯班次' : '新增班次';
+  $('#sfDate').value = shift ? shift.date : date;
+  $('#sfStart').value = shift ? hm(shift.start_time) : '08:00';
+  $('#sfEnd').value = shift ? hm(shift.end_time) : '16:00';
+  $('#sfMember').innerHTML = state.data.members.map(m =>
+    `<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('');
+  if (shift) $('#sfMember').value = shift.member_id;
+  $('#btnDeleteShift').style.display = shift ? 'flex' : 'none';
+  syncQuickTimes();
+  $('#shiftModal').classList.add('show');
+}
+function syncQuickTimes() {
+  $$('#quickTimes button').forEach(b =>
+    b.classList.toggle('active', b.dataset.s === $('#sfStart').value && b.dataset.e === $('#sfEnd').value));
+}
+$('#quickTimes').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  $('#sfStart').value = b.dataset.s; $('#sfEnd').value = b.dataset.e;
+  syncQuickTimes();
+});
+$('#sfStart').addEventListener('input', syncQuickTimes);
+$('#sfEnd').addEventListener('input', syncQuickTimes);
+
+$('#btnSaveShift').addEventListener('click', async () => {
+  const row = {
+    date: $('#sfDate').value,
+    start_time: $('#sfStart').value,
+    end_time: $('#sfEnd').value,
+    member_id: $('#sfMember').value,
+  };
+  if (!row.date || !row.start_time || !row.end_time || !row.member_id) { toast('請完整填寫班次資訊'); return; }
+  if (row.end_time <= row.start_time) { toast('結束時間需晚於開始時間'); return; }
+  const editing = state.editingShift;
+  const ok = await mutate(() =>
+    editing ? DB.update('shifts', editing.id, row) : DB.insert('shifts', row),
+    '✅ 已儲存班次');
+  if (ok) $('#shiftModal').classList.remove('show');
+});
+$('#btnDeleteShift').addEventListener('click', async () => {
+  if (!state.editingShift || !confirm('確定刪除這個班次？')) return;
+  const ok = await mutate(() => DB.remove('shifts', state.editingShift.id), '已刪除班次');
+  if (ok) $('#shiftModal').classList.remove('show');
+});
+
+/* ---- 家人管理 ---- */
+$('#btnAddMember').addEventListener('click', () => openMemberModal(null));
+$('#memberList').addEventListener('click', e => {
+  const id = e.target.dataset?.editMember;
+  if (id) openMemberModal(state.data.members.find(m => m.id === id));
+});
+function openMemberModal(member) {
+  state.editingMember = member;
+  $('#memberModalTitle').childNodes[0].textContent = member ? '編輯家人' : '新增家人';
+  $('#mfName').value = member ? member.name : '';
+  const used = new Set(state.data.members.map(m => m.color));
+  state.pickedColor = member ? member.color : (MEMBER_COLORS.find(c => !used.has(c)) || MEMBER_COLORS[0]);
+  renderPalette();
+  $('#btnDeleteMember').style.display = member ? 'flex' : 'none';
+  $('#memberModal').classList.add('show');
+}
+function renderPalette() {
+  $('#colorPalette').innerHTML = MEMBER_COLORS.map(c =>
+    `<button type="button" class="color-swatch${c === state.pickedColor ? ' sel' : ''}" style="background:${c}" data-color="${c}" aria-label="選擇顏色"></button>`).join('');
+}
+$('#colorPalette').addEventListener('click', e => {
+  const c = e.target.dataset?.color;
+  if (c) { state.pickedColor = c; renderPalette(); }
+});
+$('#btnSaveMember').addEventListener('click', async () => {
+  const name = $('#mfName').value.trim();
+  if (!name) { toast('請輸入稱呼'); return; }
+  const editing = state.editingMember;
+  const row = { name, color: state.pickedColor };
+  const ok = await mutate(() =>
+    editing ? DB.update('members', editing.id, row) : DB.insert('members', row),
+    '✅ 已儲存');
+  if (ok) $('#memberModal').classList.remove('show');
+});
+$('#btnDeleteMember').addEventListener('click', async () => {
+  const m = state.editingMember;
+  if (!m || !confirm(`確定刪除「${m.name}」？其排班也會一併刪除。`)) return;
+  const ok = await mutate(async () => {
+    const theirShifts = state.data.shifts.filter(s => s.member_id === m.id);
+    for (const s of theirShifts) await DB.remove('shifts', s.id);
+    await DB.remove('members', m.id);
+  }, '已刪除');
+  if (ok) $('#memberModal').classList.remove('show');
+});
+
+/* ============ 日誌 ============ */
+function openLogs() {
+  renderLogTimeline();
+  $('#logPage').classList.add('show');
+  $('#logTimeline').scrollTop = 0;
+}
+$('#btnAllLogs').addEventListener('click', openLogs);
+$('#btnWriteLog').addEventListener('click', () => { openLogs(); $('#logInput').focus(); });
+$('#btnCloseLogs').addEventListener('click', () => $('#logPage').classList.remove('show'));
+
+function renderLogTimeline() {
+  const groups = {};
+  for (const l of state.data.logs) {
+    const d = new Date(l.ts);
+    const k = dateKey(d);
+    (groups[k] = groups[k] || []).push(l);
+  }
+  const keys = Object.keys(groups).sort().reverse();
+  $('#logTimeline').innerHTML = keys.length ? keys.map(k => {
+    const d = new Date(k + 'T12:00');
+    return `<div class="tl-date">${fmtDateZh(d)}</div>` + groups[k].map(l => {
+      const m = memberByName(l.author);
+      return `<div class="tl-item">
+        <div class="log-dot" style="background:${m ? esc(m.color) : 'var(--teal-500)'}"></div>
+        <div style="flex:1;min-width:0">
+          <div class="log-meta"><span class="log-author">${esc(l.author || '家人')}</span> · ${esc(fmtTimeOnly(l.ts))}</div>
+          <div class="log-text">${esc(l.text)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }).join('') : '<p style="color:var(--muted);text-align:center;padding:30px 0">還沒有留言，寫下第一則交班備註吧。</p>';
+}
+
+$('#btnSendLog').addEventListener('click', async () => {
+  const text = $('#logInput').value.trim();
+  if (!text) return;
+  const author = lsGet('takecare_me', '') || '家人';
+  const ok = await mutate(() => DB.insert('logs', { ts: new Date().toISOString(), author, text }), '✅ 已送出留言');
+  if (ok) { $('#logInput').value = ''; renderLogTimeline(); }
+});
+$('#logInput').addEventListener('input', function () {
+  this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 110) + 'px';
+});
+
+/* ============ 設定 ============ */
+function inviteLink() {
+  const payload = { u: config.url, k: config.key, f: config.family, p: config.patient };
+  const b64 = btoa(encodeURIComponent(JSON.stringify(payload)));
+  return location.origin + location.pathname + '#join=' + b64;
+}
+$('#btnSettings').addEventListener('click', () => {
+  $('#setPatient').value = (config && config.patient) || '';
+  $('#setMe').value = lsGet('takecare_me', '');
+  const cs = $('#cloudSettings');
+  if (isCloud()) {
+    cs.innerHTML = `
+      <div class="field"><label>家庭代碼</label><input type="text" id="setFamily" value="${esc(config.family)}"></div>
+      <label style="display:block;font-size:.88rem;font-weight:700;color:var(--ink-2);margin-bottom:5px">邀請家人加入</label>
+      <div class="invite-box" id="inviteBox">${esc(inviteLink())}</div>
+      <div class="btn-row" style="margin-bottom:12px">
+        <button class="btn secondary sm" id="btnCopyInvite" type="button">📋 複製連結</button>
+        <button class="btn secondary sm" id="btnShareInvite" type="button">📤 分享給家人</button>
+      </div>
+      <p class="muted-note" style="margin:0 0 12px">家人在手機上打開這個連結，就會自動完成設定、看到同一份資料。</p>`;
+    $('#btnCopyInvite').addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(inviteLink()); toast('已複製邀請連結'); }
+      catch { toast('複製失敗，請長按連結手動複製'); }
+    });
+    $('#btnShareInvite').addEventListener('click', async () => {
+      const url = inviteLink();
+      if (navigator.share) { try { await navigator.share({ title: '家庭照護紀錄', text: '加入我們的照護紀錄', url }); } catch {} }
+      else { try { await navigator.clipboard.writeText(url); toast('已複製邀請連結'); } catch {} }
+    });
+  } else {
+    cs.innerHTML = `
+      <div class="card" style="background:var(--teal-50);box-shadow:none;margin-bottom:12px">
+        <p style="font-size:.9rem;color:var(--ink-2)">目前為<b>本機模式</b>，資料只存在這支手機。要讓家人互相看到資料，請設定雲端同步：</p>
+        <div class="field" style="margin-top:10px"><label>Supabase 網址</label><input type="url" id="setUrl" placeholder="https://xxxx.supabase.co"></div>
+        <div class="field"><label>anon 金鑰</label><input type="text" id="setKey" placeholder="eyJhbGciOi..."></div>
+        <div class="field"><label>家庭代碼</label><input type="text" id="setFamily" placeholder="例如：lin-family-2026"></div>
+        <p class="muted-note">啟用後，這支手機上已有的紀錄會自動上傳合併。</p>
+      </div>`;
+  }
+  $('#settingsModal').classList.add('show');
+});
+
+$('#btnSaveSettings').addEventListener('click', async () => {
+  const patient = $('#setPatient').value.trim();
+  const me = $('#setMe').value.trim();
+  if (me) lsSet('takecare_me', me);
+  config = config || { mode: 'local' };
+  config.patient = patient;
+  if (isCloud()) {
+    const fam = $('#setFamily').value.trim();
+    if (fam) config.family = fam;
+  } else {
+    const url = $('#setUrl')?.value.trim(), key = $('#setKey')?.value.trim(), fam = $('#setFamily')?.value.trim();
+    if (url && key && fam) {
+      config = { ...config, mode: 'cloud', url, key, family: fam };
+      lsSet('takecare_config', config);
+      $('#settingsModal').classList.remove('show');
+      toast('雲端同步已啟用，上傳本機資料中…');
+      await migrateLocalToCloud();
+      applyConfig();
+      await refreshAll(true);
+      return;
+    }
+  }
+  lsSet('takecare_config', config);
+  applyConfig();
+  $('#settingsModal').classList.remove('show');
+  toast('✅ 設定已儲存');
+  renderAll();
+});
+
+/* 本機資料上傳到雲端（啟用同步時執行一次）。
+   成員上傳後由伺服器換發新 id，班次的 member_id 需重新對應。 */
+async function migrateLocalToCloud() {
+  const memberIdMap = {};
+  const migrate = async (t, transform) => {
+    const rows = lsGet('takecare_' + t, []);
+    for (const r of rows) {
+      const { id, created_at, ...rest } = r;
+      const body = transform ? transform(rest) : rest;
+      if (!body) continue;
+      try {
+        const res = await sbFetch(t, { method: 'POST', body: { ...body, family_code: config.family } });
+        if (t === 'members' && res && res[0]) memberIdMap[id] = res[0].id;
+      } catch (e) { console.warn('migrate failed', t, e); }
+    }
+    lsSet('takecare_' + t, []);
+  };
+  await migrate('members');
+  await migrate('shifts', r => memberIdMap[r.member_id] ? { ...r, member_id: memberIdMap[r.member_id] } : null);
+  await migrate('vitals');
+  await migrate('logs');
+}
+
+$('#btnResetApp').addEventListener('click', () => {
+  if (!confirm('確定重設嗎？將清除此裝置上的設定與本機資料（雲端資料不受影響）。')) return;
+  Object.keys(localStorage).filter(k => k.startsWith('takecare_')).forEach(k => localStorage.removeItem(k));
+  location.hash = '';
+  location.reload();
+});
+
+/* 關閉 sheet */
+$$('[data-close]').forEach(b => b.addEventListener('click', () => $('#' + b.dataset.close).classList.remove('show')));
+$$('.overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('show'); }));
+
+/* ============ 首次設定 ============ */
+$('#btnCloudStart').addEventListener('click', async () => {
+  const url = $('#suUrl').value.trim(), key = $('#suKey').value.trim(), fam = $('#suFamily').value.trim();
+  if (!url || !key || !fam) { toast('請填寫 Supabase 網址、金鑰與家庭代碼'); return; }
+  config = { mode: 'cloud', url, key, family: fam, patient: $('#suPatient').value.trim() };
+  lsSet('takecare_config', config);
+  const me = $('#suMe').value.trim();
+  if (me) lsSet('takecare_me', me);
+  startApp();
+  if (me) {
+    try {
+      const members = await DB.list('members');
+      if (!members.some(m => m.name === me)) {
+        const used = new Set(members.map(m => m.color));
+        await DB.insert('members', { name: me, color: MEMBER_COLORS.find(c => !used.has(c)) || MEMBER_COLORS[0] });
+      }
+    } catch (e) { console.warn(e); }
+    refreshAll();
+  }
+});
+$('#btnLocalStart').addEventListener('click', async () => {
+  config = { mode: 'local', patient: $('#localPatient').value.trim() };
+  lsSet('takecare_config', config);
+  const me = $('#localMe').value.trim();
+  if (me) {
+    lsSet('takecare_me', me);
+    await DB.insert('members', { name: me, color: MEMBER_COLORS[0] });
+  }
+  startApp();
+});
+
+/* 邀請連結：#join=base64 */
+function tryJoinLink() {
+  const m = location.hash.match(/#join=(.+)/);
+  if (!m) return false;
+  try {
+    const p = JSON.parse(decodeURIComponent(atob(m[1])));
+    if (p.u && p.k && p.f) {
+      config = { mode: 'cloud', url: p.u, key: p.k, family: p.f, patient: p.p || '' };
+      lsSet('takecare_config', config);
+      history.replaceState(null, '', location.pathname + location.search);
+      if (!lsGet('takecare_me', '')) {
+        setTimeout(() => {
+          const me = prompt('歡迎加入！請輸入您的稱呼（例如：二哥），記錄時會顯示這個名字：');
+          if (me && me.trim()) {
+            lsSet('takecare_me', me.trim());
+            DB.list('members').then(members => {
+              if (!members.some(x => x.name === me.trim())) {
+                const used = new Set(members.map(x => x.color));
+                return DB.insert('members', { name: me.trim(), color: MEMBER_COLORS.find(c => !used.has(c)) || MEMBER_COLORS[0] });
+              }
+            }).then(() => refreshAll()).catch(console.warn);
+          }
+        }, 400);
+      }
+      return true;
+    }
+  } catch (e) { console.warn('join link parse failed', e); }
+  return false;
+}
+
+/* ============ 渲染與啟動 ============ */
+function renderAll() {
+  applyTitle();
+  renderHome();
+  renderRecords();
+  renderSchedule();
+  if (state.tab === 'charts') renderCharts();
+  if ($('#logPage').classList.contains('show')) renderLogTimeline();
+}
+function applyTitle() {
+  $('#appTitle').textContent = (config && config.patient) ? `${config.patient} 的照護紀錄` : '家庭照護紀錄';
+}
+function applyConfig() {
+  setSync(isCloud() ? 'ok' : 'local');
+  applyTitle();
+}
+
+let pollTimer;
+function startPolling() {
+  clearInterval(pollTimer);
+  if (!isCloud()) return;
+  pollTimer = setInterval(() => {
+    if (document.visibilityState === 'visible') refreshAll();
+  }, 20000);
+}
+
+function startApp() {
+  $('#setupScreen').classList.remove('show');
+  $('#appRoot').style.display = 'block';
+  applyConfig();
+  $('#fTime').value = nowLocalInput();
+  refreshAll(true);
+  startPolling();
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && config) refreshAll();
+});
+window.addEventListener('online', () => { if (config) refreshAll(true); });
+
+/* 進入點 */
+tryJoinLink();
+if (config) startApp();
+else $('#setupScreen').classList.add('show');
+</script>
+</body>
+</html>
