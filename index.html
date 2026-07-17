@@ -110,6 +110,29 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
 .vital-tile .vt-time{font-size:.76rem;color:var(--muted);margin-top:2px}
 .vital-tile.abn .vt-value{color:var(--danger)}
 .vital-tile .vt-warn{font-size:.8rem;color:var(--danger);font-weight:700}
+
+/* quick-record grid */
+.quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.quick-tile{
+  background:var(--teal-50);border-radius:14px;padding:13px 4px 10px;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  font-weight:700;font-size:.8rem;color:var(--teal-700);
+}
+.quick-tile:active{background:var(--teal-100)}
+.quick-tile .qt-icon{font-size:1.7rem;line-height:1}
+
+/* io summary */
+.io-stats{display:flex;justify-content:space-between;gap:6px;text-align:center}
+.io-stat{flex:1}
+.io-stat .io-num{font-size:1.4rem;font-weight:800;color:var(--ink)}
+.io-stat .io-num small{font-size:.8rem;font-weight:600;color:var(--ink-2);margin-left:1px}
+.io-stat .io-label{font-size:.76rem;color:var(--ink-2);margin-top:2px}
+
+/* generic chip picker (quick-record sheet) */
+.qlabel{display:block;font-size:.88rem;font-weight:700;color:var(--ink-2);margin-bottom:5px}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.chip{padding:9px 15px;border-radius:11px;background:var(--teal-50);color:var(--teal-700);font-weight:700;font-size:.92rem}
+.chip.active{background:var(--teal-600);color:#fff}
 .log-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--grid)}
 .log-item:last-child{border-bottom:none}
 .log-dot{width:12px;height:12px;border-radius:50%;flex:none;margin-top:7px;background:var(--teal-500)}
@@ -349,8 +372,22 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
     <!-- ======== 首頁 ======== -->
     <section class="view active" id="view-home">
       <div id="homeAlert"></div>
+      <div class="card">
+        <h2>⚡ 快速記錄</h2>
+        <div class="quick-grid" id="quickGrid">
+          <button class="quick-tile" data-quick="temp"><span class="qt-icon">🌡️</span>體溫</button>
+          <button class="quick-tile" data-quick="bp"><span class="qt-icon">🩸</span>血壓</button>
+          <button class="quick-tile" data-quick="spo2"><span class="qt-icon">💨</span>血氧</button>
+          <button class="quick-tile" data-quick="hr"><span class="qt-icon">💓</span>心率</button>
+          <button class="quick-tile" data-quick="water"><span class="qt-icon">💧</span>喝水/飲品</button>
+          <button class="quick-tile" data-quick="urine"><span class="qt-icon">🚽</span>小便</button>
+          <button class="quick-tile" data-quick="stool"><span class="qt-icon">💩</span>大便</button>
+          <button class="quick-tile" data-quick="log"><span class="qt-icon">📝</span>交班留言</button>
+        </div>
+      </div>
       <div class="card duty-card" id="dutyCard"></div>
       <div class="vitals-grid" id="vitalsGrid" style="margin-bottom:14px"></div>
+      <div class="card" id="ioSummaryCard"></div>
       <div class="card">
         <h2>📝 交班日誌 <span class="spacer"></span>
           <button class="link-btn" id="btnAllLogs">查看全部 ›</button></h2>
@@ -397,6 +434,10 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
         <h2>📋 歷史紀錄 <span class="spacer"></span>
           <button class="link-btn" id="btnExportCsv">⬇ 匯出 CSV</button></h2>
         <div id="recList"></div>
+      </div>
+      <div class="card">
+        <h2>💧 飲水／排泄紀錄</h2>
+        <div id="ioList"></div>
       </div>
     </section>
 
@@ -492,6 +533,15 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
   </div>
 </div>
 
+<!-- ======== 快速記錄 ======== -->
+<div class="overlay" id="quickModal">
+  <div class="sheet">
+    <h3 id="quickModalTitle">記錄<button class="close-x" data-close="quickModal">✕</button></h3>
+    <div id="quickModalBody"></div>
+    <button class="btn" id="btnSaveQuick" style="margin-top:6px">✅ 儲存</button>
+  </div>
+</div>
+
 <!-- ======== 設定 ======== -->
 <div class="overlay" id="settingsModal">
   <div class="sheet">
@@ -542,7 +592,7 @@ const isCloud = () => !!(config && config.mode === 'cloud' && config.url && conf
 
 const state = {
   tab: 'home',
-  data: { vitals: [], members: [], shifts: [], logs: [] },
+  data: { vitals: [], members: [], shifts: [], logs: [], io_records: [] },
   chartRange: '7',
   weekOffset: 0,
   sync: 'local',       // local | ok | offline | syncing
@@ -561,7 +611,7 @@ function setSync(s) {
 }
 
 /* ============ 資料層（雲端 Supabase REST / 本機 localStorage，介面相同） ============ */
-const ORDER = { vitals: 'ts.desc', logs: 'ts.desc', members: 'created_at.asc', shifts: 'date.asc' };
+const ORDER = { vitals: 'ts.desc', logs: 'ts.desc', members: 'created_at.asc', shifts: 'date.asc', io_records: 'ts.desc' };
 
 async function sbFetch(table, { method = 'GET', query = '', body } = {}) {
   const url = `${config.url.replace(/\/$/, '')}/rest/v1/${table}${query ? '?' + query : ''}`;
@@ -623,13 +673,14 @@ const DB = {
 
 async function refreshAll(showStatus) {
   if (isCloud() && showStatus) setSync('syncing');
-  const [vitals, members, shifts, logs] = await Promise.all(
-    ['vitals', 'members', 'shifts', 'logs'].map(t => DB.list(t)));
-  state.data = { vitals, members, shifts, logs };
+  const [vitals, members, shifts, logs, io_records] = await Promise.all(
+    ['vitals', 'members', 'shifts', 'logs', 'io_records'].map(t => DB.list(t)));
+  state.data = { vitals, members, shifts, logs, io_records };
   // 客戶端統一排序，本機/快取資料也一致
   const byTsDesc = (a, b) => (new Date(b.ts) - new Date(a.ts)) || (new Date(b.created_at || 0) - new Date(a.created_at || 0));
   state.data.vitals.sort(byTsDesc);
   state.data.logs.sort(byTsDesc);
+  state.data.io_records.sort(byTsDesc);
   state.data.shifts.sort((a, b) => (a.date + (a.start_time||'')).localeCompare(b.date + (b.start_time||'')));
   if (isCloud() && state.sync !== 'offline') setSync('ok');
   renderAll();
@@ -769,6 +820,26 @@ function renderHome() {
   const logs = state.data.logs.slice(0, 3);
   $('#homeLogs').innerHTML = logs.length ? logs.map(logItemHtml).join('')
     : '<p style="color:var(--muted);font-size:.92rem">還沒有留言，寫下第一則交班備註吧。</p>';
+
+  renderIoSummary();
+}
+
+/* 今日出入量摘要 */
+function renderIoSummary() {
+  const todayK = dateKey(new Date());
+  const todays = state.data.io_records.filter(r => dateKey(new Date(r.ts)) === todayK);
+  const water = todays.filter(r => r.type === 'water');
+  const urine = todays.filter(r => r.type === 'urine');
+  const stool = todays.filter(r => r.type === 'stool');
+  const sumCc = arr => arr.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+  const waterCc = sumCc(water), urineCc = sumCc(urine);
+  $('#ioSummaryCard').innerHTML = `
+    <h2>🧴 今日出入量</h2>
+    <div class="io-stats">
+      <div class="io-stat"><div class="io-num">${waterCc}<small>cc</small></div><div class="io-label">💧 攝入（${water.length} 次）</div></div>
+      <div class="io-stat"><div class="io-num">${urine.length}<small>次</small></div><div class="io-label">🚽 小便${urineCc ? `（約 ${urineCc}cc）` : ''}</div></div>
+      <div class="io-stat"><div class="io-num">${stool.length}<small>次</small></div><div class="io-label">💩 大便</div></div>
+    </div>`;
 }
 
 function logItemHtml(l) {
@@ -854,6 +925,8 @@ function renderRecords() {
       ${v.note ? `<div class="rec-note">${esc(v.note)}</div>` : ''}
     </div>`;
   }).join('') : '<p style="color:var(--muted)">尚無紀錄，從上方表單新增第一筆吧。</p>';
+
+  renderIoList();
 }
 function valHtml(label, val, abnMsg) {
   return `<span class="rec-val${abnMsg ? ' abn' : ''}">${label} <b>${esc(String(val))}</b></span>`;
@@ -863,6 +936,31 @@ $('#recList').addEventListener('click', e => {
   if (id && confirm('確定要刪除這筆紀錄嗎？')) mutate(() => DB.remove('vitals', id), '已刪除');
 });
 
+const IO_ICON = { water: '💧 喝水', urine: '🚽 小便', stool: '💩 大便' };
+function ioLabel(r) {
+  let s = IO_ICON[r.type] || r.type;
+  if (r.amount != null && r.amount !== '') s += ` ${r.amount}cc`;
+  if (r.detail) s += `（${esc(r.detail)}）`;
+  return s;
+}
+function renderIoList() {
+  const list = state.data.io_records;
+  $('#ioList').innerHTML = list.length ? list.slice(0, 100).map(r => `
+    <div class="rec-item">
+      <div class="rec-head">
+        <span class="rec-time">${esc(fmtDT(r.ts))}</span>
+        <span class="rec-by">${esc(r.recorder || '')}</span>
+        <button class="rec-del" data-del-io="${esc(r.id)}">刪除</button>
+      </div>
+      <div class="rec-vals"><span class="rec-val"><b>${ioLabel(r)}</b></span></div>
+      ${r.note ? `<div class="rec-note">${esc(r.note)}</div>` : ''}
+    </div>`).join('') : '<p style="color:var(--muted)">尚無紀錄</p>';
+}
+$('#ioList').addEventListener('click', e => {
+  const id = e.target.dataset?.delIo;
+  if (id && confirm('確定要刪除這筆紀錄嗎？')) mutate(() => DB.remove('io_records', id), '已刪除');
+});
+
 /* CSV 匯出（UTF-8 BOM，Excel 中文不亂碼） */
 function csvCell(s) {
   s = String(s ?? '');
@@ -870,11 +968,14 @@ function csvCell(s) {
 }
 function downloadCsv(filename, rows) {
   const csv = '\uFEFF' + rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.href = url;
   a.download = filename;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(a.href);
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 $('#btnExportCsv').addEventListener('click', () => {
   const d = new Date(), stamp = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
@@ -888,6 +989,18 @@ $('#btnExportCsv').addEventListener('click', () => {
     ]);
   });
   downloadCsv(`照護紀錄_生命徵象_${stamp}.csv`, vRows);
+  if (state.data.io_records.length) {
+    const ioRows = [['日期時間','類型','數量(cc)','細項','記錄者','備註']];
+    [...state.data.io_records].reverse().forEach(r => {
+      const dt = new Date(r.ts);
+      ioRows.push([
+        `${dt.getFullYear()}/${pad(dt.getMonth()+1)}/${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`,
+        { water: '喝水', urine: '小便', stool: '大便' }[r.type] || r.type,
+        r.amount ?? '', r.detail ?? '', r.recorder ?? '', r.note ?? '',
+      ]);
+    });
+    downloadCsv(`照護紀錄_飲水排泄_${stamp}.csv`, ioRows);
+  }
   if (state.data.logs.length) {
     const lRows = [['日期時間','留言者','內容']];
     [...state.data.logs].reverse().forEach(l => {
@@ -1264,6 +1377,130 @@ $('#logInput').addEventListener('input', function () {
   this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 110) + 'px';
 });
 
+/* ============ 首頁快速記錄 ============ */
+const QUICK_DEFS = {
+  temp:  { title: '🌡️ 記錄體溫', kind: 'vital', field: 'temp', label: '體溫', unit: '°C', inputmode: 'decimal', check: abnTemp, toastLabel: '體溫' },
+  spo2:  { title: '💨 記錄血氧', kind: 'vital', field: 'spo2', label: '血氧 SpO₂', unit: '%', inputmode: 'numeric', check: abnSpo2, toastLabel: '血氧' },
+  hr:    { title: '💓 記錄心率', kind: 'vital', field: 'hr', label: '心率', unit: '次/分', inputmode: 'numeric', check: abnHr, toastLabel: '心率' },
+  bp:    { title: '🩸 記錄血壓', kind: 'bp', toastLabel: '血壓' },
+  water: { title: '💧 記錄喝水/飲品', kind: 'io', ioType: 'water', chips: [100, 150, 200, 250, 300, 500], typeChips: ['水', '湯', '牛奶', '其他'], toastLabel: '喝水' },
+  urine: { title: '🚽 記錄小便', kind: 'io', ioType: 'urine', chips: [100, 200, 300, 400], toastLabel: '小便' },
+  stool: { title: '💩 記錄大便', kind: 'io', ioType: 'stool', typeOnly: ['正常成形', '稀便', '偏硬', '血便'], toastLabel: '大便' },
+};
+let quickType = null;
+
+$('#quickGrid').addEventListener('click', e => {
+  const btn = e.target.closest('[data-quick]'); if (!btn) return;
+  const type = btn.dataset.quick;
+  if (type === 'log') { openLogs(); setTimeout(() => $('#logInput').focus(), 250); return; }
+  openQuickModal(type);
+});
+
+function openQuickModal(type) {
+  quickType = type;
+  const def = QUICK_DEFS[type];
+  $('#quickModalTitle').childNodes[0].textContent = def.title;
+  let body = `<div class="field"><label>時間</label><input type="datetime-local" id="qTime" value="${nowLocalInput()}"></div>`;
+
+  if (def.kind === 'vital') {
+    body += `<div class="field"><label>${esc(def.label)}</label>
+      <div class="unit-wrap"><input type="text" inputmode="${def.inputmode}" id="qVal" placeholder=""><span class="unit">${esc(def.unit)}</span></div>
+      <div class="hint" id="qHint"></div></div>`;
+  } else if (def.kind === 'bp') {
+    body += `<div class="row2">
+      <div class="field"><label>收縮壓（高壓）</label>
+        <div class="unit-wrap"><input type="text" inputmode="numeric" id="qSys"><span class="unit">mmHg</span></div>
+        <div class="hint" id="qHintSys"></div></div>
+      <div class="field"><label>舒張壓（低壓）</label>
+        <div class="unit-wrap"><input type="text" inputmode="numeric" id="qDia"><span class="unit">mmHg</span></div></div>
+    </div>`;
+  } else if (def.kind === 'io') {
+    if (def.chips) {
+      body += `<label class="qlabel">快速選擇</label><div class="chip-row" id="qChips">
+        ${def.chips.map(c => `<button type="button" class="chip" data-cc="${c}">${c}cc</button>`).join('')}</div>
+        <div class="field"><label>自訂 cc（選填）</label><input type="text" inputmode="numeric" id="qCc" placeholder="例如 180"></div>`;
+    }
+    if (def.typeChips) {
+      body += `<label class="qlabel">飲品種類（選填）</label><div class="chip-row" id="qDrinkChips">
+        ${def.typeChips.map(t => `<button type="button" class="chip" data-type="${esc(t)}">${esc(t)}</button>`).join('')}</div>`;
+    }
+    if (def.typeOnly) {
+      body += `<label class="qlabel">性質</label><div class="chip-row" id="qStoolChips">
+        ${def.typeOnly.map(t => `<button type="button" class="chip" data-type="${esc(t)}">${esc(t)}</button>`).join('')}</div>`;
+    }
+  }
+  body += `<div class="field"><label>備註（選填）</label><input type="text" id="qNote" placeholder=""></div>`;
+  $('#quickModalBody').innerHTML = body;
+
+  if (def.kind === 'vital') {
+    $('#qVal').addEventListener('input', () => {
+      const v = numOrNull($('#qVal').value);
+      const msg = v == null ? null : def.check(v);
+      $('#qHint').textContent = msg ? '⚠ ' + msg : '';
+      $('#qVal').classList.toggle('abn-input', !!msg);
+    });
+  } else if (def.kind === 'bp') {
+    $('#qSys').addEventListener('input', () => {
+      const v = numOrNull($('#qSys').value);
+      const msg = v == null ? null : abnSys(v);
+      $('#qHintSys').textContent = msg ? '⚠ ' + msg : '';
+      $('#qSys').classList.toggle('abn-input', !!msg);
+    });
+  } else if (def.kind === 'io') {
+    if (def.chips) {
+      $('#qChips').addEventListener('click', e => {
+        const b = e.target.closest('.chip'); if (!b) return;
+        $$('#qChips .chip').forEach(x => x.classList.toggle('active', x === b));
+        $('#qCc').value = b.dataset.cc;
+      });
+    }
+    if (def.typeChips) {
+      $('#qDrinkChips').addEventListener('click', e => {
+        const b = e.target.closest('.chip'); if (!b) return;
+        $$('#qDrinkChips .chip').forEach(x => x.classList.toggle('active', x === b));
+      });
+    }
+    if (def.typeOnly) {
+      $('#qStoolChips').addEventListener('click', e => {
+        const b = e.target.closest('.chip'); if (!b) return;
+        $$('#qStoolChips .chip').forEach(x => x.classList.toggle('active', x === b));
+      });
+    }
+  }
+  $('#quickModal').classList.add('show');
+  if (def.kind === 'vital') setTimeout(() => $('#qVal').focus(), 200);
+}
+
+$('#btnSaveQuick').addEventListener('click', async () => {
+  const def = QUICK_DEFS[quickType];
+  const ts = new Date($('#qTime').value || Date.now()).toISOString();
+  const note = $('#qNote').value.trim();
+  const recorder = lsGet('takecare_me', '');
+  let ok = false;
+
+  if (def.kind === 'vital') {
+    const v = numOrNull($('#qVal').value);
+    if (v == null) { toast('請輸入數值'); return; }
+    ok = await mutate(() => DB.insert('vitals', { ts, [def.field]: v, recorder, note }), `✅ 已記錄${def.toastLabel}`);
+  } else if (def.kind === 'bp') {
+    const sys = numOrNull($('#qSys').value), dia = numOrNull($('#qDia').value);
+    if (sys == null && dia == null) { toast('請至少輸入一項血壓數值'); return; }
+    ok = await mutate(() => DB.insert('vitals', { ts, sys, dia, recorder, note }), '✅ 已記錄血壓');
+  } else if (def.kind === 'io') {
+    const amount = numOrNull($('#qCc')?.value);
+    let detail = null;
+    if (def.typeChips) { const sel = $('#qDrinkChips .chip.active'); detail = sel ? sel.dataset.type : null; }
+    if (def.typeOnly) {
+      const sel = $('#qStoolChips .chip.active');
+      if (!sel) { toast('請選擇性質'); return; }
+      detail = sel.dataset.type;
+    }
+    if (def.chips && amount == null && !confirm('未輸入 cc 數量，僅記錄發生時間，確定嗎？')) return;
+    ok = await mutate(() => DB.insert('io_records', { ts, type: def.ioType, amount, detail, recorder, note }), `✅ 已記錄${def.toastLabel}`);
+  }
+  if (ok) $('#quickModal').classList.remove('show');
+});
+
 /* ============ 設定 ============ */
 function inviteLink() {
   const payload = { u: config.url, k: config.key, f: config.family, p: config.patient };
@@ -1356,6 +1593,7 @@ async function migrateLocalToCloud() {
   await migrate('shifts', r => memberIdMap[r.member_id] ? { ...r, member_id: memberIdMap[r.member_id] } : null);
   await migrate('vitals');
   await migrate('logs');
+  await migrate('io_records');
 }
 
 $('#btnResetApp').addEventListener('click', () => {
