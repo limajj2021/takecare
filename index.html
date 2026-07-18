@@ -112,7 +112,7 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
 .vital-tile .vt-warn{font-size:.8rem;color:var(--danger);font-weight:700}
 
 /* quick-record grid */
-.quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
 .quick-tile{
   background:var(--teal-50);border-radius:14px;padding:13px 4px 10px;
   display:flex;flex-direction:column;align-items:center;gap:4px;
@@ -133,6 +133,34 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
 .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
 .chip{padding:9px 15px;border-radius:11px;background:var(--teal-50);color:var(--teal-700);font-weight:700;font-size:.92rem}
 .chip.active{background:var(--teal-600);color:#fff}
+/* wheel picker（滾輪數字選擇器） */
+.wheel-row{display:flex;gap:12px;margin-bottom:12px}
+.wheel-col{flex:1;min-width:0;text-align:center}
+.wheel-col .w-label{font-size:.82rem;font-weight:700;color:var(--ink-2);margin-bottom:4px}
+.wheel-box{position:relative;background:#fbfdfd;border:1.5px solid var(--grid);border-radius:12px;overflow:hidden}
+.wheel{position:relative;z-index:1;height:114px;overflow-y:scroll;scroll-snap-type:y mandatory;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.wheel::-webkit-scrollbar{display:none}
+.wheel-pad{height:38px}
+.wheel-item{height:38px;line-height:38px;text-align:center;font-size:1.1rem;color:var(--muted);
+  scroll-snap-align:center;font-variant-numeric:tabular-nums;cursor:pointer}
+.wheel-item.sel{color:var(--teal-700);font-weight:800;font-size:1.28rem}
+.wheel-hl{position:absolute;top:38px;left:6px;right:6px;height:38px;border-radius:9px;background:var(--teal-50);z-index:0;pointer-events:none}
+.wheel-box::before,.wheel-box::after{content:"";position:absolute;left:0;right:0;height:30px;pointer-events:none;z-index:2}
+.wheel-box::before{top:0;background:linear-gradient(#fbfdfd,rgba(251,253,253,0))}
+.wheel-box::after{bottom:0;background:linear-gradient(rgba(251,253,253,0),#fbfdfd)}
+
+/* 發燒 SOP */
+.sop{background:#fff4ec;border:1.5px solid #f2c9a8;border-radius:12px;padding:12px;margin-bottom:12px}
+.sop .sop-title{font-weight:800;color:#a14d00;margin-bottom:8px}
+.sop .chip{background:#fde8d8;color:#a14d00}
+.sop .chip.active{background:#e87722;color:#fff}
+
+/* 小便倒數 */
+.urine-timer-main{font-size:1.55rem;font-weight:800}
+.urine-timer-main.overdue{color:var(--danger)}
+.urine-timer-sub{font-size:.85rem;color:var(--ink-2)}
+
 .log-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--grid)}
 .log-item:last-child{border-bottom:none}
 .log-dot{width:12px;height:12px;border-radius:50%;flex:none;margin-top:7px;background:var(--teal-500)}
@@ -140,15 +168,6 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
 .log-author{font-weight:700;color:var(--ink-2)}
 .log-text{font-size:.98rem;white-space:pre-wrap;word-break:break-word}
 .link-btn{color:var(--teal-600);font-weight:700;font-size:.92rem;padding:6px 4px}
-
-/* FAB */
-.fab{
-  position:fixed;right:calc(50% - 244px);bottom:calc(var(--nav-h) + 16px);z-index:35;
-  background:var(--teal-600);color:#fff;border-radius:99px;box-shadow:0 5px 16px rgba(0,105,92,.35);
-  padding:14px 22px;font-size:1.05rem;font-weight:700;display:flex;align-items:center;gap:6px;
-}
-@media (max-width:560px){.fab{right:18px}}
-.fab:active{background:var(--teal-700)}
 
 /* ---------- forms ---------- */
 .field{margin-bottom:12px}
@@ -370,16 +389,15 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
       <div class="card">
         <h2>⚡ 快速記錄</h2>
         <div class="quick-grid" id="quickGrid">
-          <button class="quick-tile" data-quick="temp"><span class="qt-icon">🌡️</span>體溫</button>
-          <button class="quick-tile" data-quick="bp"><span class="qt-icon">🩸</span>血壓</button>
-          <button class="quick-tile" data-quick="spo2"><span class="qt-icon">💨</span>血氧</button>
-          <button class="quick-tile" data-quick="hr"><span class="qt-icon">💓</span>心率</button>
+          <button class="quick-tile" data-quick="vitals"><span class="qt-icon">🩺</span>生命徵象</button>
+          <button class="quick-tile" data-quick="temp"><span class="qt-icon">🌡️</span>只量體溫</button>
           <button class="quick-tile" data-quick="water"><span class="qt-icon">💧</span>喝水/飲品</button>
           <button class="quick-tile" data-quick="urine"><span class="qt-icon">🚽</span>小便</button>
           <button class="quick-tile" data-quick="stool"><span class="qt-icon">💩</span>大便</button>
           <button class="quick-tile" data-quick="log"><span class="qt-icon">📝</span>交班留言</button>
         </div>
       </div>
+      <div class="card" id="urineTimerCard"></div>
       <div class="card duty-card" id="dutyCard"></div>
       <div class="vitals-grid" id="vitalsGrid" style="margin-bottom:14px"></div>
       <div class="card" id="ioSummaryCard"></div>
@@ -393,38 +411,7 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
 
     <!-- ======== 紀錄 ======== -->
     <section class="view" id="view-records">
-      <div class="card">
-        <h2>➕ 新增生命徵象</h2>
-        <form id="vitalForm">
-          <div class="field"><label>日期時間</label>
-            <input type="datetime-local" id="fTime" required></div>
-          <div class="row2">
-            <div class="field"><label>體溫</label>
-              <div class="unit-wrap"><input type="text" inputmode="decimal" id="fTemp" placeholder="36.5"><span class="unit">°C</span></div>
-              <div class="hint" id="hTemp"></div></div>
-            <div class="field"><label>血氧 SpO₂</label>
-              <div class="unit-wrap"><input type="text" inputmode="numeric" id="fSpo2" placeholder="98"><span class="unit">%</span></div>
-              <div class="hint" id="hSpo2"></div></div>
-          </div>
-          <div class="row2">
-            <div class="field"><label>收縮壓（高壓）</label>
-              <div class="unit-wrap"><input type="text" inputmode="numeric" id="fSys" placeholder="120"><span class="unit">mmHg</span></div>
-              <div class="hint" id="hSys"></div></div>
-            <div class="field"><label>舒張壓（低壓）</label>
-              <div class="unit-wrap"><input type="text" inputmode="numeric" id="fDia" placeholder="80"><span class="unit">mmHg</span></div>
-              <div class="hint" id="hDia"></div></div>
-          </div>
-          <div class="field"><label>心率</label>
-            <div class="unit-wrap"><input type="text" inputmode="numeric" id="fHr" placeholder="72"><span class="unit">次/分</span></div>
-            <div class="hint" id="hHr"></div></div>
-          <div class="field"><label>記錄者</label>
-            <input type="text" id="fRecorder" list="memberNames" placeholder="您的稱呼"></div>
-          <datalist id="memberNames"></datalist>
-          <div class="field"><label>備註（用藥、進食、排便、精神狀況…）</label>
-            <textarea id="fNote" placeholder="例如：早上服用降壓藥，午餐吃八分滿"></textarea></div>
-          <button class="btn" type="submit">💾 儲存紀錄</button>
-        </form>
-      </div>
+      <p class="muted-note" style="margin:6px 2px 12px">新增紀錄請回首頁使用「⚡ 快速記錄」。</p>
       <div class="card">
         <h2>📋 歷史紀錄 <span class="spacer"></span>
           <button class="link-btn" id="btnExportCsv">⬇ 匯出 CSV</button></h2>
@@ -463,8 +450,6 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
       </div>
     </section>
   </main>
-
-  <button class="fab" id="fab">＋ 新增紀錄</button>
 
   <nav class="tabbar">
     <div class="tabbar-inner">
@@ -543,6 +528,11 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
     <h3>設定<button class="close-x" data-close="settingsModal">✕</button></h3>
     <div class="field"><label>病人稱呼</label><input type="text" id="setPatient"></div>
     <div class="field"><label>我的稱呼（預設記錄者）</label><input type="text" id="setMe"></div>
+    <div class="field"><label>小便倒數間隔（記錄小便後開始倒數）</label>
+      <div class="wheel-row" style="margin-bottom:0"><div class="wheel-col">
+        <div class="wheel-box"><div class="wheel-hl"></div><div class="wheel" id="setUrineWheel"></div></div>
+      </div></div>
+    </div>
     <div id="cloudSettings"></div>
     <button class="btn" id="btnSaveSettings" style="margin-top:4px">儲存設定</button>
     <button class="btn danger" id="btnResetApp" style="margin-top:10px">重設此裝置（清除本機設定）</button>
@@ -723,13 +713,10 @@ function switchTab(tab) {
   state.tab = tab;
   $$('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + tab));
-  $('#fab').style.display = tab === 'home' ? 'flex' : 'none';
-  if (tab === 'records' && document.activeElement !== $('#fTime')) $('#fTime').value = nowLocalInput();
   if (tab === 'charts') renderCharts();
   window.scrollTo(0, 0);
 }
 $$('.tab').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
-$('#fab').addEventListener('click', () => { switchTab('records'); $('#fTemp').focus(); });
 
 /* ============ 首頁 ============ */
 function memberByName(name) { return state.data.members.find(m => m.name === name); }
@@ -824,25 +811,54 @@ function renderHome() {
     : '<p style="color:var(--muted);font-size:.92rem">還沒有留言，寫下第一則交班備註吧。</p>';
 
   renderIoSummary();
+  renderUrineTimer();
 }
+
+/* 大便紀錄若勾了「有小便」，也算一次小便事件（會重置倒數） */
+const isUrineEvent = r => r.type === 'urine' || (r.type === 'stool' && String(r.detail || '').includes('有小便'));
 
 /* 今日出入量摘要 */
 function renderIoSummary() {
   const todayK = dateKey(new Date());
   const todays = state.data.io_records.filter(r => dateKey(new Date(r.ts)) === todayK);
   const water = todays.filter(r => r.type === 'water');
-  const urine = todays.filter(r => r.type === 'urine');
+  const urineCount = todays.filter(isUrineEvent).length;
   const stool = todays.filter(r => r.type === 'stool');
   const sumCc = arr => arr.reduce((s, r) => s + (Number(r.amount) || 0), 0);
-  const waterCc = sumCc(water), urineCc = sumCc(urine);
+  const waterCc = sumCc(water), urineCc = sumCc(todays.filter(r => r.type === 'urine'));
   $('#ioSummaryCard').innerHTML = `
     <h2>🧴 今日出入量</h2>
     <div class="io-stats">
       <div class="io-stat"><div class="io-num">${waterCc}<small>cc</small></div><div class="io-label">💧 攝入（${water.length} 次）</div></div>
-      <div class="io-stat"><div class="io-num">${urine.length}<small>次</small></div><div class="io-label">🚽 小便${urineCc ? `（約 ${urineCc}cc）` : ''}</div></div>
+      <div class="io-stat"><div class="io-num">${urineCount}<small>次</small></div><div class="io-label">🚽 小便${urineCc ? `（約 ${urineCc}cc）` : ''}</div></div>
       <div class="io-stat"><div class="io-num">${stool.length}<small>次</small></div><div class="io-label">💩 大便</div></div>
     </div>`;
 }
+
+/* 小便倒數計時：每記錄一次小便（含大便順便）就重新起算 */
+const urineInterval = () => {
+  const v = +lsGet('takecare_urine_interval', 120);
+  return Number.isFinite(v) && v >= 30 ? v : 120;
+};
+function renderUrineTimer() {
+  const el = $('#urineTimerCard');
+  if (!el) return;
+  const iv = urineInterval();
+  const last = state.data.io_records.find(isUrineEvent); // 已依時間新→舊排序
+  if (!last) {
+    el.innerHTML = `<h2>⏱️ 小便倒數</h2>
+      <p style="color:var(--muted);font-size:.92rem">尚無小便紀錄，記錄一次後開始倒數 ${iv} 分鐘。</p>`;
+    return;
+  }
+  const fmtMin = m => m >= 60 ? `${Math.floor(m / 60)} 小時 ${m % 60} 分` : `${m} 分`;
+  const elapsed = Math.max(0, Math.floor((Date.now() - new Date(last.ts)) / 60000));
+  const remain = iv - elapsed;
+  el.innerHTML = `<h2>⏱️ 小便倒數 <span class="spacer"></span>
+      <span style="font-size:.78rem;font-weight:600;color:var(--muted)">間隔 ${iv} 分</span></h2>
+    <div class="urine-timer-main${remain < 0 ? ' overdue' : ''}">${remain >= 0 ? '再 ' + fmtMin(remain) : '⚠ 已超過 ' + fmtMin(-remain)}</div>
+    <div class="urine-timer-sub">上次小便：${esc(fmtDT(last.ts))}${last.type === 'stool' ? '（大便時順便）' : ''} · 距今 ${fmtMin(elapsed)}</div>`;
+}
+setInterval(() => { if (config && state.tab === 'home') renderUrineTimer(); }, 30000);
 
 function logItemHtml(l) {
   const m = memberByName(l.author);
@@ -863,50 +879,64 @@ const numOrNull = s => {
   return Number.isFinite(n) ? n : null;
 };
 
-/* 輸入即時異常提示 */
-const liveChecks = [
-  ['#fTemp', '#hTemp', abnTemp], ['#fSys', '#hSys', abnSys],
-  ['#fSpo2', '#hSpo2', abnSpo2], ['#fHr', '#hHr', abnHr],
-];
-liveChecks.forEach(([inp, hint, check]) => {
-  $(inp).addEventListener('input', () => {
-    const v = numOrNull($(inp).value);
-    const msg = v == null ? null : check(v);
-    $(hint).textContent = msg ? '⚠ ' + msg : '';
-    $(inp).classList.toggle('abn-input', !!msg);
+/* ============ 滾輪選擇器 ============ */
+const WHEEL_ITEM_H = 38;
+const wheelRange = (min, max, step = 1) => {
+  const out = [];
+  for (let v = min; v <= max + 1e-9; v += step) out.push(Math.round(v * 100) / 100);
+  return out;
+};
+const wheelNearestIdx = (values, v) => {
+  let bi = 0, bd = Infinity;
+  values.forEach((x, i) => {
+    if (x == null) return;
+    const d = Math.abs(x - v);
+    if (d < bd) { bd = d; bi = i; }
   });
-});
+  return bi;
+};
+const wheelBoxHtml = (id, label) =>
+  `<div class="wheel-col">${label ? `<div class="w-label">${label}</div>` : ''}
+    <div class="wheel-box"><div class="wheel-hl"></div><div class="wheel" id="${id}"></div></div>
+  </div>`;
 
-$('#vitalForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const row = {
-    ts: new Date($('#fTime').value || Date.now()).toISOString(),
-    temp: numOrNull($('#fTemp').value),
-    sys: numOrNull($('#fSys').value),
-    dia: numOrNull($('#fDia').value),
-    spo2: numOrNull($('#fSpo2').value),
-    hr: numOrNull($('#fHr').value),
-    recorder: $('#fRecorder').value.trim() || lsGet('takecare_me', ''),
-    note: $('#fNote').value.trim(),
+/* 建立滾輪；需在元素可見（modal 已開啟）後呼叫，scrollTop 才會生效 */
+function initWheel(sel, values, initialIdx, opts = {}) {
+  const el = typeof sel === 'string' ? $(sel) : sel;
+  const fmt = opts.fmt || (v => v == null ? '—' : String(v));
+  el.innerHTML = `<div class="wheel-pad"></div>${values.map(v =>
+    `<div class="wheel-item">${fmt(v)}</div>`).join('')}<div class="wheel-pad"></div>`;
+  const items = [...el.querySelectorAll('.wheel-item')];
+  let idx = Math.max(0, Math.min(values.length - 1, initialIdx || 0));
+  const paint = () => items.forEach((it, i) => it.classList.toggle('sel', i === idx));
+  const setIdx = (i, smooth) => {
+    idx = Math.max(0, Math.min(values.length - 1, i));
+    el.scrollTo({ top: idx * WHEEL_ITEM_H, behavior: smooth ? 'smooth' : 'auto' });
+    paint();
+    if (opts.onChange) opts.onChange(values[idx]);
   };
-  if (row.temp == null && row.sys == null && row.dia == null && row.spo2 == null && row.hr == null && !row.note) {
-    toast('請至少填一項數值或備註'); return;
-  }
-  if (row.recorder) lsSet('takecare_me', row.recorder);
-  const ok = await mutate(() => DB.insert('vitals', row), '✅ 已儲存紀錄');
-  if (ok) {
-    ['#fTemp','#fSys','#fDia','#fSpo2','#fHr','#fNote'].forEach(s => $(s).value = '');
-    liveChecks.forEach(([inp, hint]) => { $(hint).textContent = ''; $(inp).classList.remove('abn-input'); });
-    $('#fTime').value = nowLocalInput();
-    switchTab('home');
-  }
-});
+  el.scrollTop = idx * WHEEL_ITEM_H;
+  paint();
+  let raf;
+  el.addEventListener('scroll', () => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => {
+      const i = Math.max(0, Math.min(values.length - 1, Math.round(el.scrollTop / WHEEL_ITEM_H)));
+      if (i !== idx) { idx = i; paint(); if (opts.onChange) opts.onChange(values[idx]); }
+    });
+  });
+  el.addEventListener('click', e => {
+    const it = e.target.closest('.wheel-item');
+    if (it) setIdx(items.indexOf(it), true);
+  });
+  return {
+    get value() { return values[idx]; },
+    setValue(v, smooth) { setIdx(wheelNearestIdx(values, v), smooth); },
+    refresh() { el.scrollTop = idx * WHEEL_ITEM_H; paint(); },
+  };
+}
 
 function renderRecords() {
-  $('#fRecorder').value = $('#fRecorder').value || lsGet('takecare_me', '');
-  $('#memberNames').innerHTML = state.data.members.map(m => `<option value="${esc(m.name)}">`).join('');
-  if (!$('#fTime').value) $('#fTime').value = nowLocalInput();
-
   const list = state.data.vitals;
   $('#recList').innerHTML = list.length ? list.slice(0, 100).map(v => {
     const issues = vitalIssues(v);
@@ -1253,6 +1283,10 @@ function openShiftModal(shift, date) {
   $('#sfMember').innerHTML = state.data.members.map(m =>
     `<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('');
   if (shift) $('#sfMember').value = shift.member_id;
+  else {
+    const me = memberByName(lsGet('takecare_me', ''));
+    if (me) $('#sfMember').value = me.id;
+  }
   $('#btnDeleteShift').style.display = shift ? 'flex' : 'none';
   syncQuickTimes();
   $('#shiftModal').classList.add('show');
@@ -1380,16 +1414,39 @@ $('#logInput').addEventListener('input', function () {
 });
 
 /* ============ 首頁快速記錄 ============ */
+/* 生命徵象：通常四項一起量，偶爾只量體溫 → 同一個表單，可勾選本次量了哪些 */
+const VITAL_METRICS = {
+  temp: { name: '體溫', wlabel: '體溫 °C', min: 34, max: 42, step: .1, def: 36.5, fmt: v => v.toFixed(1), check: abnTemp },
+  bp:   { name: '血壓' },
+  spo2: { name: '血氧', wlabel: '血氧 SpO₂ %', min: 50, max: 100, step: 1, def: 98, check: abnSpo2 },
+  hr:   { name: '心率', wlabel: '心率 次/分', min: 30, max: 220, step: 1, def: 72, check: abnHr },
+};
 const QUICK_DEFS = {
-  temp:  { title: '🌡️ 記錄體溫', kind: 'vital', field: 'temp', label: '體溫', unit: '°C', inputmode: 'decimal', check: abnTemp, toastLabel: '體溫' },
-  spo2:  { title: '💨 記錄血氧', kind: 'vital', field: 'spo2', label: '血氧 SpO₂', unit: '%', inputmode: 'numeric', check: abnSpo2, toastLabel: '血氧' },
-  hr:    { title: '💓 記錄心率', kind: 'vital', field: 'hr', label: '心率', unit: '次/分', inputmode: 'numeric', check: abnHr, toastLabel: '心率' },
-  bp:    { title: '🩸 記錄血壓', kind: 'bp', toastLabel: '血壓' },
-  water: { title: '💧 記錄喝水/飲品', kind: 'io', ioType: 'water', chips: [100, 150, 200, 250, 300, 500], typeChips: ['水', '湯', '牛奶', '其他'], toastLabel: '喝水' },
-  urine: { title: '🚽 記錄小便', kind: 'io', ioType: 'urine', chips: [100, 200, 300, 400], toastLabel: '小便' },
-  stool: { title: '💩 記錄大便', kind: 'io', ioType: 'stool', typeOnly: ['正常成形', '稀便', '偏硬', '血便'], toastLabel: '大便' },
+  vitals: { title: '🩺 記錄生命徵象', kind: 'vitals', metrics: ['temp', 'bp', 'spo2', 'hr'], toastLabel: '生命徵象' },
+  temp:   { title: '🌡️ 記錄體溫', kind: 'vitals', metrics: ['temp'], toastLabel: '體溫' },
+  water:  { title: '💧 記錄喝水/飲品', kind: 'io', ioType: 'water', chips: [100, 150, 200, 250, 300, 500], typeChips: ['水', '湯', '牛奶', '其他'], toastLabel: '喝水' },
+  urine:  { title: '🚽 記錄小便', kind: 'io', ioType: 'urine', chips: [100, 200, 300, 400], locChips: ['尿壺', '廁所'], toastLabel: '小便' },
+  stool:  { title: '💩 記錄大便', kind: 'io', ioType: 'stool', typeOnly: ['正常成形', '稀便', '偏硬', '血便'], locChips: ['排便椅', '廁所'], urineToo: true, toastLabel: '大便' },
 };
 let quickType = null;
+let qWheels = {};   // 本次 modal 的滾輪
+let qEnabled = {};  // 生命徵象：本次量了哪些項目
+
+const chipRowHtml = (id, items, activeAll) =>
+  `<div class="chip-row" id="${id}">${items.map(t =>
+    `<button type="button" class="chip${activeAll ? ' active' : ''}" data-v="${esc(t)}">${esc(t)}</button>`).join('')}</div>`;
+
+/* 單選 chip 群組；allowNone=true 可再點一下取消 */
+function bindChipGroup(id, { allowNone = true, onChange } = {}) {
+  $('#' + id).addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    const wasActive = b.classList.contains('active');
+    $$(`#${id} .chip`).forEach(x => x.classList.remove('active'));
+    if (!wasActive || !allowNone) b.classList.add('active');
+    if (onChange) onChange($(`#${id} .chip.active`)?.dataset.v ?? null);
+  });
+}
+const chipValue = id => $(`#${id} .chip.active`)?.dataset.v ?? null;
 
 $('#quickGrid').addEventListener('click', e => {
   const btn = e.target.closest('[data-quick]'); if (!btn) return;
@@ -1398,107 +1455,176 @@ $('#quickGrid').addEventListener('click', e => {
   openQuickModal(type);
 });
 
+/* 發燒 SOP：體溫 ≥38 時展開，需確認退燒藥與通知護士 */
+function updateSop() {
+  const fever = !!(qEnabled.temp && qWheels.temp && abnTemp(qWheels.temp.value) === '發燒');
+  const block = $('#sopBlock');
+  if (block) block.style.display = fever ? 'block' : 'none';
+  const hint = $('#qh-temp');
+  if (hint && qWheels.temp) {
+    const msg = qEnabled.temp ? abnTemp(qWheels.temp.value) : null;
+    hint.textContent = msg ? '⚠ ' + msg : '';
+  }
+}
+
 function openQuickModal(type) {
   quickType = type;
   const def = QUICK_DEFS[type];
+  qWheels = {}; qEnabled = {};
   $('#quickModalTitle').childNodes[0].textContent = def.title;
   let body = `<div class="field"><label>時間</label><input type="datetime-local" id="qTime" value="${nowLocalInput()}"></div>`;
 
-  if (def.kind === 'vital') {
-    body += `<div class="field"><label>${esc(def.label)}</label>
-      <div class="unit-wrap"><input type="text" inputmode="${def.inputmode}" id="qVal" placeholder=""><span class="unit">${esc(def.unit)}</span></div>
-      <div class="hint" id="qHint"></div></div>`;
-  } else if (def.kind === 'bp') {
-    body += `<div class="row2">
-      <div class="field"><label>收縮壓（高壓）</label>
-        <div class="unit-wrap"><input type="text" inputmode="numeric" id="qSys"><span class="unit">mmHg</span></div>
-        <div class="hint" id="qHintSys"></div></div>
-      <div class="field"><label>舒張壓（低壓）</label>
-        <div class="unit-wrap"><input type="text" inputmode="numeric" id="qDia"><span class="unit">mmHg</span></div></div>
+  if (def.kind === 'vitals') {
+    def.metrics.forEach(m => qEnabled[m] = true);
+    if (def.metrics.length > 1) {
+      body += `<label class="qlabel">本次量了哪些？（點選取消沒量的項目）</label>
+        <div class="chip-row" id="qMetricChips">${def.metrics.map(m =>
+          `<button type="button" class="chip active" data-m="${m}">${VITAL_METRICS[m].name}</button>`).join('')}</div>`;
+    }
+    for (const m of def.metrics) {
+      if (m === 'bp') {
+        body += `<div id="sec-bp"><div class="wheel-row">
+          ${wheelBoxHtml('qwSys', '收縮壓 mmHg')}${wheelBoxHtml('qwDia', '舒張壓 mmHg')}
+        </div><div class="hint" id="qhBp" style="margin-top:-8px;margin-bottom:8px"></div></div>`;
+      } else {
+        body += `<div id="sec-${m}"><div class="wheel-row">${wheelBoxHtml('qw-' + m, VITAL_METRICS[m].wlabel)}</div>
+          <div class="hint" id="qh-${m}" style="margin-top:-8px;margin-bottom:8px"></div></div>`;
+      }
+    }
+    body += `<div class="sop" id="sopBlock" style="display:none">
+      <div class="sop-title">🔥 發燒處理 SOP</div>
+      <label class="qlabel">退燒藥吃了嗎？</label>
+      <div class="chip-row" id="sopMed">
+        <button type="button" class="chip" data-v="已服退燒藥">已服用</button>
+        <button type="button" class="chip" data-v="尚未服退燒藥">尚未服用</button>
+      </div>
+      <label class="qlabel">護士知道了嗎？</label>
+      <div class="chip-row" id="sopNurse" style="margin-bottom:2px">
+        <button type="button" class="chip" data-v="已通知護士">已通知</button>
+        <button type="button" class="chip" data-v="尚未通知護士">尚未通知</button>
+      </div>
     </div>`;
   } else if (def.kind === 'io') {
     if (def.chips) {
-      body += `<label class="qlabel">快速選擇</label><div class="chip-row" id="qChips">
-        ${def.chips.map(c => `<button type="button" class="chip" data-cc="${c}">${c}cc</button>`).join('')}</div>
-        <div class="field"><label>自訂 cc（選填）</label><input type="text" inputmode="numeric" id="qCc" placeholder="例如 180"></div>`;
+      body += `<label class="qlabel">尿量／水量（滾輪選擇，快速鍵可直接帶入）</label>
+        <div class="chip-row" id="qChips">${def.chips.map(c =>
+          `<button type="button" class="chip" data-cc="${c}">${c}cc</button>`).join('')}</div>
+        <div class="wheel-row">${wheelBoxHtml('qwCc', 'cc 數（選「不記量」可略過）')}</div>`;
     }
     if (def.typeChips) {
-      body += `<label class="qlabel">飲品種類（選填）</label><div class="chip-row" id="qDrinkChips">
-        ${def.typeChips.map(t => `<button type="button" class="chip" data-type="${esc(t)}">${esc(t)}</button>`).join('')}</div>`;
+      body += `<label class="qlabel">飲品種類（選填）</label>${chipRowHtml('qDrinkChips', def.typeChips)}`;
     }
     if (def.typeOnly) {
-      body += `<label class="qlabel">性質</label><div class="chip-row" id="qStoolChips">
-        ${def.typeOnly.map(t => `<button type="button" class="chip" data-type="${esc(t)}">${esc(t)}</button>`).join('')}</div>`;
+      body += `<label class="qlabel">性質</label>${chipRowHtml('qStoolChips', def.typeOnly)}`;
+    }
+    if (def.locChips) {
+      body += `<label class="qlabel">地點</label>${chipRowHtml('qLocChips', def.locChips)}`;
+    }
+    if (def.urineToo) {
+      body += `<label class="qlabel">有順便小便嗎？（會重置小便倒數）</label>
+        <div class="chip-row" id="qUrineToo">
+          <button type="button" class="chip" data-v="有小便">有小便</button>
+        </div>`;
     }
   }
   body += `<div class="field"><label>備註（選填）</label><input type="text" id="qNote" placeholder=""></div>`;
   $('#quickModalBody').innerHTML = body;
+  $('#quickModal').classList.add('show');
 
-  if (def.kind === 'vital') {
-    $('#qVal').addEventListener('input', () => {
-      const v = numOrNull($('#qVal').value);
-      const msg = v == null ? null : def.check(v);
-      $('#qHint').textContent = msg ? '⚠ ' + msg : '';
-      $('#qVal').classList.toggle('abn-input', !!msg);
-    });
-  } else if (def.kind === 'bp') {
-    $('#qSys').addEventListener('input', () => {
-      const v = numOrNull($('#qSys').value);
-      const msg = v == null ? null : abnSys(v);
-      $('#qHintSys').textContent = msg ? '⚠ ' + msg : '';
-      $('#qSys').classList.toggle('abn-input', !!msg);
-    });
+  /* 滾輪必須在 modal 顯示後初始化，scrollTop 才會生效 */
+  if (def.kind === 'vitals') {
+    for (const m of def.metrics) {
+      if (m === 'bp') {
+        const lastBp = state.data.vitals.find(v => v.sys != null || v.dia != null);
+        const sysVals = wheelRange(60, 250), diaVals = wheelRange(30, 150);
+        qWheels.sys = initWheel('#qwSys', sysVals, wheelNearestIdx(sysVals, lastBp && lastBp.sys != null ? +lastBp.sys : 120), {
+          onChange: v => { const msg = abnSys(v); $('#qhBp').textContent = msg ? '⚠ ' + msg : ''; },
+        });
+        qWheels.dia = initWheel('#qwDia', diaVals, wheelNearestIdx(diaVals, lastBp && lastBp.dia != null ? +lastBp.dia : 80));
+      } else {
+        const md = VITAL_METRICS[m];
+        const vals = wheelRange(md.min, md.max, md.step);
+        const last = latestMetric(m);
+        qWheels[m] = initWheel('#qw-' + m, vals, wheelNearestIdx(vals, last ? +last[m] : md.def), {
+          fmt: md.fmt,
+          onChange: v => {
+            const msg = qEnabled[m] ? md.check(v) : null;
+            $('#qh-' + m).textContent = msg ? '⚠ ' + msg : '';
+            if (m === 'temp') updateSop();
+          },
+        });
+        const msg = md.check(qWheels[m].value);
+        $('#qh-' + m).textContent = msg ? '⚠ ' + msg : '';
+      }
+    }
+    if (def.metrics.length > 1) {
+      $('#qMetricChips').addEventListener('click', e => {
+        const b = e.target.closest('.chip'); if (!b) return;
+        const m = b.dataset.m;
+        qEnabled[m] = !qEnabled[m];
+        b.classList.toggle('active', qEnabled[m]);
+        const sec = $('#sec-' + m);
+        sec.style.display = qEnabled[m] ? 'block' : 'none';
+        if (qEnabled[m]) (m === 'bp' ? [qWheels.sys, qWheels.dia] : [qWheels[m]]).forEach(w => w.refresh());
+        updateSop();
+      });
+    }
+    bindChipGroup('sopMed', { allowNone: false });
+    bindChipGroup('sopNurse', { allowNone: false });
+    updateSop();
   } else if (def.kind === 'io') {
     if (def.chips) {
+      const ccVals = [null, ...wheelRange(10, 1000, 10)];
+      qWheels.cc = initWheel('#qwCc', ccVals, 0, { fmt: v => v == null ? '不記量' : v + 'cc' });
       $('#qChips').addEventListener('click', e => {
         const b = e.target.closest('.chip'); if (!b) return;
         $$('#qChips .chip').forEach(x => x.classList.toggle('active', x === b));
-        $('#qCc').value = b.dataset.cc;
+        qWheels.cc.setValue(+b.dataset.cc, true);
       });
     }
-    if (def.typeChips) {
-      $('#qDrinkChips').addEventListener('click', e => {
-        const b = e.target.closest('.chip'); if (!b) return;
-        $$('#qDrinkChips .chip').forEach(x => x.classList.toggle('active', x === b));
-      });
-    }
-    if (def.typeOnly) {
-      $('#qStoolChips').addEventListener('click', e => {
-        const b = e.target.closest('.chip'); if (!b) return;
-        $$('#qStoolChips .chip').forEach(x => x.classList.toggle('active', x === b));
-      });
-    }
+    if (def.typeChips) bindChipGroup('qDrinkChips');
+    if (def.typeOnly) bindChipGroup('qStoolChips');
+    if (def.locChips) bindChipGroup('qLocChips');
+    if (def.urineToo) bindChipGroup('qUrineToo');
   }
-  $('#quickModal').classList.add('show');
-  if (def.kind === 'vital') setTimeout(() => $('#qVal').focus(), 200);
 }
 
 $('#btnSaveQuick').addEventListener('click', async () => {
   const def = QUICK_DEFS[quickType];
   const ts = new Date($('#qTime').value || Date.now()).toISOString();
-  const note = $('#qNote').value.trim();
+  let note = $('#qNote').value.trim();
   const recorder = lsGet('takecare_me', '');
   let ok = false;
 
-  if (def.kind === 'vital') {
-    const v = numOrNull($('#qVal').value);
-    if (v == null) { toast('請輸入數值'); return; }
-    ok = await mutate(() => DB.insert('vitals', { ts, [def.field]: v, recorder, note }), `✅ 已記錄${def.toastLabel}`);
-  } else if (def.kind === 'bp') {
-    const sys = numOrNull($('#qSys').value), dia = numOrNull($('#qDia').value);
-    if (sys == null && dia == null) { toast('請至少輸入一項血壓數值'); return; }
-    ok = await mutate(() => DB.insert('vitals', { ts, sys, dia, recorder, note }), '✅ 已記錄血壓');
-  } else if (def.kind === 'io') {
-    const amount = numOrNull($('#qCc')?.value);
-    let detail = null;
-    if (def.typeChips) { const sel = $('#qDrinkChips .chip.active'); detail = sel ? sel.dataset.type : null; }
-    if (def.typeOnly) {
-      const sel = $('#qStoolChips .chip.active');
-      if (!sel) { toast('請選擇性質'); return; }
-      detail = sel.dataset.type;
+  if (def.kind === 'vitals') {
+    if (!def.metrics.some(m => qEnabled[m])) { toast('請至少保留一個量測項目'); return; }
+    const row = { ts, recorder };
+    if (qEnabled.temp) row.temp = qWheels.temp.value;
+    if (qEnabled.bp) { row.sys = qWheels.sys.value; row.dia = qWheels.dia.value; }
+    if (qEnabled.spo2) row.spo2 = qWheels.spo2.value;
+    if (qEnabled.hr) row.hr = qWheels.hr.value;
+    if (row.temp != null && abnTemp(row.temp) === '發燒') {
+      const med = chipValue('sopMed'), nurse = chipValue('sopNurse');
+      if (!med || !nurse) { toast('🔥 發燒 SOP：請確認退燒藥與護士通知狀況'); return; }
+      note = `【發燒SOP】${med}、${nurse}` + (note ? '；' + note : '');
     }
-    if (def.chips && amount == null && !confirm('未輸入 cc 數量，僅記錄發生時間，確定嗎？')) return;
-    ok = await mutate(() => DB.insert('io_records', { ts, type: def.ioType, amount, detail, recorder, note }), `✅ 已記錄${def.toastLabel}`);
+    row.note = note;
+    ok = await mutate(() => DB.insert('vitals', row), `✅ 已記錄${def.toastLabel}`);
+  } else if (def.kind === 'io') {
+    const amount = qWheels.cc ? qWheels.cc.value : null;
+    const parts = [];
+    if (def.typeOnly) {
+      const t = chipValue('qStoolChips');
+      if (!t) { toast('請選擇性質'); return; }
+      parts.push(t);
+    }
+    if (def.typeChips) { const t = chipValue('qDrinkChips'); if (t) parts.push(t); }
+    if (def.locChips) { const l = chipValue('qLocChips'); if (l) parts.push(l); }
+    if (def.urineToo && chipValue('qUrineToo')) parts.push('有小便');
+    const detail = parts.length ? parts.join('｜') : null;
+    if (def.chips && amount == null && !confirm('未選擇 cc 數量，僅記錄發生時間，確定嗎？')) return;
+    ok = await mutate(() => DB.insert('io_records', { ts, type: def.ioType, amount, detail, recorder, note }),
+      `✅ 已記錄${def.toastLabel}`);
   }
   if (ok) $('#quickModal').classList.remove('show');
 });
@@ -1543,12 +1669,17 @@ $('#btnSettings').addEventListener('click', () => {
       </div>`;
   }
   $('#settingsModal').classList.add('show');
+  const ivVals = wheelRange(30, 360, 15);
+  settingsUrineWheel = initWheel('#setUrineWheel', ivVals,
+    wheelNearestIdx(ivVals, urineInterval()), { fmt: v => v + ' 分鐘' });
 });
+let settingsUrineWheel = null;
 
 $('#btnSaveSettings').addEventListener('click', async () => {
   const patient = $('#setPatient').value.trim();
   const me = $('#setMe').value.trim();
   if (me) lsSet('takecare_me', me);
+  if (settingsUrineWheel) lsSet('takecare_urine_interval', settingsUrineWheel.value);
   config = config || { mode: 'local' };
   config.patient = patient;
   if (isCloud()) {
@@ -1696,12 +1827,24 @@ function startPolling() {
   }, 20000);
 }
 
+/* 確保「我」在家人成員名單裡，否則排班選單選不到自己 */
+async function ensureSelfMember() {
+  const me = lsGet('takecare_me', '');
+  if (!me) return false;
+  try {
+    const members = await DB.list('members');
+    if (members.some(m => m.name === me)) return false;
+    const used = new Set(members.map(m => m.color));
+    await DB.insert('members', { name: me, color: MEMBER_COLORS.find(c => !used.has(c)) || MEMBER_COLORS[0] });
+    return true;
+  } catch (e) { console.warn('ensureSelfMember failed', e); return false; }
+}
+
 function startApp() {
   $('#setupScreen').classList.remove('show');
   $('#appRoot').style.display = 'block';
   applyConfig();
-  $('#fTime').value = nowLocalInput();
-  refreshAll(true);
+  refreshAll(true).then(() => ensureSelfMember()).then(added => { if (added) refreshAll(); });
   startPolling();
 }
 
