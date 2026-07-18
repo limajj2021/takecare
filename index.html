@@ -6,6 +6,10 @@
 <meta name="theme-color" content="#00897b">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="照護紀錄">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <title>家庭照護紀錄</title>
 <style>
 :root{
@@ -379,6 +383,7 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
   <header class="topbar">
     <h1 id="appTitle">家庭照護紀錄</h1>
     <span class="sync-pill local" id="syncPill">本機</span>
+    <button class="icon-btn" id="btnInstall" aria-label="加入主畫面" style="display:none">📲</button>
     <button class="icon-btn" id="btnSettings" aria-label="設定">⚙️</button>
   </header>
 
@@ -391,6 +396,7 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
         <div class="quick-grid" id="quickGrid">
           <button class="quick-tile" data-quick="vitals"><span class="qt-icon">🩺</span>生命徵象</button>
           <button class="quick-tile" data-quick="temp"><span class="qt-icon">🌡️</span>只量體溫</button>
+          <button class="quick-tile" data-quick="glucose"><span class="qt-icon">🩸</span>血糖</button>
           <button class="quick-tile" data-quick="water"><span class="qt-icon">💧</span>喝水/飲品</button>
           <button class="quick-tile" data-quick="urine"><span class="qt-icon">🚽</span>小便</button>
           <button class="quick-tile" data-quick="stool"><span class="qt-icon">💩</span>大便</button>
@@ -519,6 +525,14 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
     <h3 id="quickModalTitle">記錄<button class="close-x" data-close="quickModal">✕</button></h3>
     <div id="quickModalBody"></div>
     <button class="btn" id="btnSaveQuick" style="margin-top:6px">✅ 儲存</button>
+  </div>
+</div>
+
+<!-- ======== 加入主畫面說明 ======== -->
+<div class="overlay" id="installModal">
+  <div class="sheet">
+    <h3>📲 加入主畫面<button class="close-x" data-close="installModal">✕</button></h3>
+    <div id="installModalBody"></div>
   </div>
 </div>
 
@@ -687,7 +701,9 @@ async function mutate(fn, okMsg) {
     return true;
   } catch (e) {
     console.error(e);
-    toast('⚠ 儲存失敗，請確認網路後再試');
+    toast(/glucose/i.test(String(e.message))
+      ? '⚠ 資料庫尚未新增血糖欄位，請在 Supabase SQL Editor 執行 setup.sql'
+      : '⚠ 儲存失敗，請確認網路後再試');
     return false;
   }
 }
@@ -697,6 +713,7 @@ function abnTemp(v) { return v >= 38 ? '發燒' : (v < 35 ? '體溫過低' : nul
 function abnSys(v)  { return v >= 140 ? '血壓偏高' : (v < 90 ? '血壓偏低' : null); }
 function abnSpo2(v) { return v < 94 ? '血氧偏低' : null; }
 function abnHr(v)   { return v > 100 ? '心跳過快' : (v < 60 ? '心跳過慢' : null); }
+function abnGlucose(v) { return v >= 200 ? '血糖偏高' : (v < 70 ? '低血糖' : null); }
 
 /* 一筆紀錄的異常清單，如 ['發燒','血氧偏低'] */
 function vitalIssues(v) {
@@ -705,6 +722,7 @@ function vitalIssues(v) {
   if (v.sys  != null) { const m = abnSys(+v.sys);   if (m) out.push(m); }
   if (v.spo2 != null) { const m = abnSpo2(+v.spo2); if (m) out.push(m); }
   if (v.hr   != null) { const m = abnHr(+v.hr);     if (m) out.push(m); }
+  if (v.glucose != null) { const m = abnGlucose(+v.glucose); if (m) out.push(m); }
   return out;
 }
 
@@ -770,6 +788,7 @@ function renderHome() {
     { key: 'bp',   label: '🫀 血壓 <small style="font-weight:600;color:var(--muted)">mmHg</small>', unit: 'mmHg' },
     { key: 'spo2', label: '💨 血氧', unit: '%', check: abnSpo2 },
     { key: 'hr',   label: '💓 心率', unit: '次/分', check: abnHr },
+    { key: 'glucose', label: '🩸 血糖', unit: 'mg/dL', check: abnGlucose },
   ];
   const alerts = [];
   $('#vitalsGrid').innerHTML = tiles.map(t => {
@@ -946,6 +965,7 @@ function renderRecords() {
       parts.push(valHtml('血壓', `${v.sys ?? '–'}/${v.dia ?? '–'}`, v.sys != null ? abnSys(+v.sys) : null));
     if (v.spo2 != null) parts.push(valHtml('血氧', v.spo2 + '%', abnSpo2(+v.spo2)));
     if (v.hr != null) parts.push(valHtml('心率', v.hr, abnHr(+v.hr)));
+    if (v.glucose != null) parts.push(valHtml('血糖', v.glucose + ' mg/dL', abnGlucose(+v.glucose)));
     return `<div class="rec-item">
       <div class="rec-head">
         <span class="rec-time">${esc(fmtDT(v.ts))}</span>
@@ -1011,12 +1031,12 @@ function downloadCsv(filename, rows) {
 }
 $('#btnExportCsv').addEventListener('click', () => {
   const d = new Date(), stamp = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
-  const vRows = [['日期時間','體溫(°C)','收縮壓(mmHg)','舒張壓(mmHg)','血氧SpO2(%)','心率(次/分)','記錄者','備註','異常項目']];
+  const vRows = [['日期時間','體溫(°C)','收縮壓(mmHg)','舒張壓(mmHg)','血氧SpO2(%)','心率(次/分)','血糖(mg/dL)','記錄者','備註','異常項目']];
   [...state.data.vitals].reverse().forEach(v => {
     const dt = new Date(v.ts);
     vRows.push([
       `${dt.getFullYear()}/${pad(dt.getMonth()+1)}/${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`,
-      v.temp ?? '', v.sys ?? '', v.dia ?? '', v.spo2 ?? '', v.hr ?? '',
+      v.temp ?? '', v.sys ?? '', v.dia ?? '', v.spo2 ?? '', v.hr ?? '', v.glucose ?? '',
       v.recorder ?? '', v.note ?? '', vitalIssues(v).join('、'),
     ]);
   });
@@ -1076,6 +1096,9 @@ const CHART_DEFS = [
   { id: 'hr', title: '💓 心率（次/分）', yPad: [55, 105],
     series: [{ key: 'hr', name: '心率', color: 'var(--series-1)', colorHex: '#2a78d6', check: abnHr }],
     bands: [{ from: 100, to: Infinity }, { from: -Infinity, to: 60 }], decimals: 0 },
+  { id: 'glucose', title: '🩸 血糖（mg/dL）', yPad: [70, 180],
+    series: [{ key: 'glucose', name: '血糖', color: 'var(--series-1)', colorHex: '#2a78d6', check: abnGlucose }],
+    bands: [{ from: 200, to: Infinity }, { from: -Infinity, to: 70 }], decimals: 0 },
 ];
 
 function renderCharts() {
@@ -1420,10 +1443,12 @@ const VITAL_METRICS = {
   bp:   { name: '血壓' },
   spo2: { name: '血氧', wlabel: '血氧 SpO₂ %', min: 50, max: 100, step: 1, def: 98, check: abnSpo2 },
   hr:   { name: '心率', wlabel: '心率 次/分', min: 30, max: 220, step: 1, def: 72, check: abnHr },
+  glucose: { name: '血糖', wlabel: '血糖 mg/dL', min: 40, max: 500, step: 1, def: 100, check: abnGlucose },
 };
 const QUICK_DEFS = {
   vitals: { title: '🩺 記錄生命徵象', kind: 'vitals', metrics: ['temp', 'bp', 'spo2', 'hr'], toastLabel: '生命徵象' },
   temp:   { title: '🌡️ 記錄體溫', kind: 'vitals', metrics: ['temp'], toastLabel: '體溫' },
+  glucose:{ title: '🩸 記錄血糖', kind: 'vitals', metrics: ['glucose'], tagChips: ['空腹', '飯前', '飯後', '睡前'], toastLabel: '血糖' },
   water:  { title: '💧 記錄喝水/飲品', kind: 'io', ioType: 'water', chips: [100, 150, 200, 250, 300, 500], typeChips: ['水', '湯', '牛奶', '其他'], toastLabel: '喝水' },
   urine:  { title: '🚽 記錄小便', kind: 'io', ioType: 'urine', chips: [100, 200, 300, 400], locChips: ['尿壺', '廁所'], toastLabel: '小便' },
   stool:  { title: '💩 記錄大便', kind: 'io', ioType: 'stool', typeOnly: ['正常成形', '稀便', '偏硬', '血便'], locChips: ['排便椅', '廁所'], urineToo: true, toastLabel: '大便' },
@@ -1490,6 +1515,9 @@ function openQuickModal(type) {
         body += `<div id="sec-${m}"><div class="wheel-row">${wheelBoxHtml('qw-' + m, VITAL_METRICS[m].wlabel)}</div>
           <div class="hint" id="qh-${m}" style="margin-top:-8px;margin-bottom:8px"></div></div>`;
       }
+    }
+    if (def.tagChips) {
+      body += `<label class="qlabel">量測時機（選填）</label>${chipRowHtml('qTagChips', def.tagChips)}`;
     }
     body += `<div class="sop" id="sopBlock" style="display:none">
       <div class="sop-title">🔥 發燒處理 SOP</div>
@@ -1569,6 +1597,7 @@ function openQuickModal(type) {
         updateSop();
       });
     }
+    if (def.tagChips) bindChipGroup('qTagChips');
     bindChipGroup('sopMed', { allowNone: false });
     bindChipGroup('sopNurse', { allowNone: false });
     updateSop();
@@ -1603,6 +1632,11 @@ $('#btnSaveQuick').addEventListener('click', async () => {
     if (qEnabled.bp) { row.sys = qWheels.sys.value; row.dia = qWheels.dia.value; }
     if (qEnabled.spo2) row.spo2 = qWheels.spo2.value;
     if (qEnabled.hr) row.hr = qWheels.hr.value;
+    if (qEnabled.glucose) row.glucose = qWheels.glucose.value;
+    if (def.tagChips) {
+      const tag = chipValue('qTagChips');
+      if (tag) note = tag + (note ? '；' + note : '');
+    }
     if (row.temp != null && abnTemp(row.temp) === '發燒') {
       const med = chipValue('sopMed'), nurse = chipValue('sopNurse');
       if (!med || !nurse) { toast('🔥 發燒 SOP：請確認退燒藥與護士通知狀況'); return; }
@@ -1846,7 +1880,59 @@ function startApp() {
   applyConfig();
   refreshAll(true).then(() => ensureSelfMember()).then(added => { if (added) refreshAll(); });
   startPolling();
+  // 主畫面捷徑（長按 App 圖示）帶 ?quick=xxx 直接打開對應的快速記錄
+  const qp = new URLSearchParams(location.search).get('quick');
+  if (qp && QUICK_DEFS[qp]) {
+    history.replaceState(null, '', location.pathname);
+    setTimeout(() => openQuickModal(qp), 350);
+  }
 }
+
+/* ============ 加入主畫面（PWA 安裝） ============ */
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+const isStandalone = () =>
+  window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+let deferredInstall = null;
+
+if (!isStandalone()) $('#btnInstall').style.display = 'flex';
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstall = e;
+  if (!isStandalone()) $('#btnInstall').style.display = 'flex';
+});
+window.addEventListener('appinstalled', () => {
+  $('#btnInstall').style.display = 'none';
+  toast('✅ 已加入主畫面');
+});
+
+$('#btnInstall').addEventListener('click', async () => {
+  if (deferredInstall) {
+    deferredInstall.prompt();
+    const { outcome } = await deferredInstall.userChoice;
+    deferredInstall = null;
+    if (outcome === 'accepted') { $('#btnInstall').style.display = 'none'; }
+    return;
+  }
+  // 瀏覽器不支援自動安裝（如 iPhone Safari）→ 顯示手動步驟
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  $('#installModalBody').innerHTML = isIOS ? `
+    <p style="font-size:.95rem;color:var(--ink-2);margin-bottom:12px">加到主畫面後，就能像 App 一樣一鍵開啟：</p>
+    <ol style="padding-left:22px;font-size:1rem;line-height:2">
+      <li>用 <b>Safari</b> 開啟本頁</li>
+      <li>點下方工具列的 <b>分享</b> 按鈕 <span style="font-size:1.1rem">⬆️</span>（方框加箭頭）</li>
+      <li>往下捲，選 <b>「加入主畫面」</b></li>
+      <li>按右上角 <b>「加入」</b> 完成</li>
+    </ol>` : `
+    <p style="font-size:.95rem;color:var(--ink-2);margin-bottom:12px">加到主畫面後，就能像 App 一樣一鍵開啟：</p>
+    <ol style="padding-left:22px;font-size:1rem;line-height:2">
+      <li>點瀏覽器右上角 <b>⋮</b> 選單</li>
+      <li>選 <b>「加入主畫面」</b>（或「安裝應用程式」）</li>
+      <li>確認後完成</li>
+    </ol>
+    <p class="muted-note">加入後長按 App 圖示，還有「記錄血糖」「記錄小便」等捷徑可以直接跳到記錄畫面。</p>`;
+  $('#installModal').classList.add('show');
+});
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && config) refreshAll();

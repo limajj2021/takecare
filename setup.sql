@@ -15,6 +15,7 @@ create table if not exists public.vitals (
   dia integer,           -- 舒張壓
   spo2 integer,          -- 血氧 %
   hr integer,            -- 心率
+  glucose integer,       -- 血糖 mg/dL
   recorder text,         -- 記錄者
   note text,             -- 備註
   created_at timestamptz not null default now()
@@ -62,6 +63,9 @@ create table if not exists public.io_records (
   note text,
   created_at timestamptz not null default now()
 );
+
+-- 既有資料庫升級用：舊版建立的 vitals 資料表補上血糖欄位（重複執行無害）
+alter table public.vitals add column if not exists glucose integer;
 
 create index if not exists vitals_family_ts_idx on public.vitals (family_code, ts desc);
 create index if not exists members_family_idx on public.members (family_code);

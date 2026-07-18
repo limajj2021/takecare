@@ -1,0 +1,21 @@
+{
+  "name": "家庭照護紀錄",
+  "short_name": "照護紀錄",
+  "description": "全家人一起照顧，資料即時互通",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f8f7",
+  "theme_color": "#00897b",
+  "lang": "zh-Hant",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "記錄生命徵象", "url": "./?quick=vitals", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "記錄血糖", "url": "./?quick=glucose", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "記錄小便", "url": "./?quick=urine", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "記錄大便", "url": "./?quick=stool", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
+  ]
+}
