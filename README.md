@@ -68,10 +68,13 @@
 | `setup.sql` | Supabase 資料表初始化腳本（貼進 SQL Editor 執行一次；升級功能後重新執行一次即可補上新欄位） |
 | `manifest.webmanifest` / `sw.js` / `icon-*.png` | 「加入主畫面」（PWA）所需的設定檔、離線快取與 App 圖示 |
 
-## 資料庫升級（既有使用者）
+## 資料庫升級（既有使用者，可選）
 
-新增血糖功能後，請到 Supabase 專案的 **SQL Editor** 執行一行（或重新執行整份 `setup.sql` 也可以）：
+App 內建相容機制：即使資料庫還沒有血糖欄位，血糖也能正常記錄與顯示（暫存於備註欄位，讀取時自動解析）。
+若想讓血糖存進正式欄位，可到 Supabase 專案的 **SQL Editor** 執行一行（或重新執行整份 `setup.sql`）：
 
 ```sql
 alter table public.vitals add column if not exists glucose integer;
 ```
+
+執行後新紀錄自動改用正式欄位，先前的紀錄也仍可正常判讀。

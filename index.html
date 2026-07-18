@@ -677,11 +677,42 @@ const DB = {
   },
 };
 
+/* ---- 血糖欄位相容層 ----
+   雲端資料庫尚未新增 glucose 欄位時，血糖改存在備註中（【血糖】數值），
+   讀取時解析回 glucose 欄位並還原備註。之後補上欄位也不影響舊資料判讀。 */
+const GLU_NOTE_RE = /【血糖】(\d+(?:\.\d+)?)/;
+
+async function insertVitalWithFallback(row) {
+  try { return await DB.insert('vitals', row); }
+  catch (e) {
+    if (row.glucose != null && /glucose/i.test(String(e.message))) {
+      const { glucose, ...rest } = row;
+      rest.note = `【血糖】${glucose}` + (rest.note ? '；' + rest.note : '');
+      return DB.insert('vitals', rest);
+    }
+    throw e;
+  }
+}
+
+function normalizeVitals(rows) {
+  for (const v of rows) {
+    if (v.glucose == null && v.note) {
+      const m = String(v.note).match(GLU_NOTE_RE);
+      if (m) {
+        v.glucose = +m[1];
+        v.note = String(v.note).replace(GLU_NOTE_RE, '')
+          .replace(/；；/g, '；').replace(/^；|；$/g, '');
+      }
+    }
+  }
+}
+
 async function refreshAll(showStatus) {
   if (isCloud() && showStatus) setSync('syncing');
   const [vitals, members, shifts, logs, io_records] = await Promise.all(
     ['vitals', 'members', 'shifts', 'logs', 'io_records'].map(t => DB.list(t)));
   state.data = { vitals, members, shifts, logs, io_records };
+  normalizeVitals(state.data.vitals);
   // 客戶端統一排序，本機/快取資料也一致
   const byTsDesc = (a, b) => (new Date(b.ts) - new Date(a.ts)) || (new Date(b.created_at || 0) - new Date(a.created_at || 0));
   state.data.vitals.sort(byTsDesc);
@@ -1643,7 +1674,7 @@ $('#btnSaveQuick').addEventListener('click', async () => {
       note = `【發燒SOP】${med}、${nurse}` + (note ? '；' + note : '');
     }
     row.note = note;
-    ok = await mutate(() => DB.insert('vitals', row), `✅ 已記錄${def.toastLabel}`);
+    ok = await mutate(() => insertVitalWithFallback(row), `✅ 已記錄${def.toastLabel}`);
   } else if (def.kind === 'io') {
     const amount = qWheels.cc ? qWheels.cc.value : null;
     const parts = [];
