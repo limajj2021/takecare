@@ -411,14 +411,26 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
       <div class="card" id="pinnedInfoCard" style="display:none"></div>
       <div class="card">
         <h2>⚡ 快速記錄</h2>
-        <div class="quick-grid" id="quickGrid">
-          <button class="quick-tile" data-quick="vitals"><span class="qt-icon">🩺</span>生命徵象</button>
-          <button class="quick-tile" data-quick="temp"><span class="qt-icon">🌡️</span>只量體溫</button>
-          <button class="quick-tile" data-quick="glucose"><span class="qt-icon">🩸</span>血糖</button>
-          <button class="quick-tile" data-quick="water"><span class="qt-icon">💧</span>喝水/飲品</button>
-          <button class="quick-tile" data-quick="urine"><span class="qt-icon">🚽</span>小便</button>
-          <button class="quick-tile" data-quick="stool"><span class="qt-icon">💩</span>大便</button>
-          <button class="quick-tile" data-quick="log"><span class="qt-icon">📝</span>交班留言</button>
+        <div id="quickGrid">
+          <label class="qlabel">🩺 生命徵象</label>
+          <div class="quick-grid">
+            <button class="quick-tile" data-quick="vitals"><span class="qt-icon">🩺</span>生命徵象</button>
+            <button class="quick-tile" data-quick="temp"><span class="qt-icon">🌡️</span>只量體溫</button>
+            <button class="quick-tile" data-quick="glucose"><span class="qt-icon">🩸</span>血糖</button>
+          </div>
+          <label class="qlabel" style="margin-top:14px">⬇️ 輸入</label>
+          <div class="quick-grid">
+            <button class="quick-tile" data-quick="water"><span class="qt-icon">💧</span>喝水/飲品</button>
+          </div>
+          <label class="qlabel" style="margin-top:14px">⬆️ 輸出</label>
+          <div class="quick-grid">
+            <button class="quick-tile" data-quick="urine"><span class="qt-icon">🚽</span>小便</button>
+            <button class="quick-tile" data-quick="stool"><span class="qt-icon">💩</span>大便</button>
+          </div>
+          <label class="qlabel" style="margin-top:14px">📋 其他</label>
+          <div class="quick-grid">
+            <button class="quick-tile" data-quick="log"><span class="qt-icon">📝</span>交班留言</button>
+          </div>
         </div>
       </div>
       <div class="card" id="urineTimerCard"></div>
