@@ -443,7 +443,8 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
       <p class="muted-note" style="margin:6px 2px 12px">新增紀錄請回首頁使用「⚡ 快速記錄」。</p>
       <div class="card">
         <h2>📋 歷史紀錄 <span class="spacer"></span>
-          <button class="link-btn" id="btnExportCsv">⬇ 匯出 CSV</button></h2>
+          <button class="link-btn" id="btnExportCsv">📦 匯出完整原始資料</button></h2>
+        <p class="muted-note" style="margin:0 0 10px">一次匯出全部資料表（生命徵象／飲水排泄／交班日誌／家人／排班）、所有欄位，不經篩選，適合當作完整備份。</p>
         <div id="recList"></div>
       </div>
       <div class="card">
@@ -768,7 +769,7 @@ function setSync(s) {
 /* ============ 資料層（雲端 Supabase REST / 本機 localStorage，介面相同） ============ */
 const ORDER = { vitals: 'ts.desc', logs: 'ts.desc', members: 'created_at.asc', shifts: 'date.asc', io_records: 'ts.desc' };
 
-async function sbFetch(table, { method = 'GET', query = '', body } = {}) {
+async function sbFetch(table, { method = 'GET', query = '', body, headers: extraHeaders } = {}) {
   const url = `${config.url.replace(/\/$/, '')}/rest/v1/${table}${query ? '?' + query : ''}`;
   const res = await fetch(url, {
     method,
@@ -777,6 +778,7 @@ async function sbFetch(table, { method = 'GET', query = '', body } = {}) {
       Authorization: 'Bearer ' + config.key,
       'Content-Type': 'application/json',
       Prefer: 'return=representation',
+      ...extraHeaders,
     },
     body: body ? JSON.stringify(body) : undefined,
   });
@@ -786,11 +788,27 @@ async function sbFetch(table, { method = 'GET', query = '', body } = {}) {
 }
 const famQ = () => `family_code=eq.${encodeURIComponent(config.family)}`;
 
+/* Supabase 單次 API 回應筆數有上限（依專案設定，常見預設 1000）。
+   用 Range header 分頁抓到「真的收到空頁」才停止，不猜測伺服器上限，
+   確保長期累積的資料不會被悄悄截斷——這是全 App 資料完整性的關鍵。 */
+const PAGE_SIZE = 500;
+async function sbFetchAll(table, query) {
+  const all = [];
+  let offset = 0;
+  for (;;) {
+    const page = await sbFetch(table, { query, headers: { Range: `${offset}-${offset + PAGE_SIZE - 1}` } });
+    if (!page || page.length === 0) break;
+    all.push(...page);
+    offset += page.length;
+  }
+  return all;
+}
+
 const DB = {
   async list(table) {
     if (!isCloud()) return lsGet('takecare_' + table, []);
     try {
-      const rows = await sbFetch(table, { query: `select=*&${famQ()}&order=${ORDER[table]}` });
+      const rows = await sbFetchAll(table, `select=*&${famQ()}&order=${ORDER[table]}`);
       lsSet('takecare_cache_' + table, rows);
       return rows;
     } catch (e) {
@@ -1239,39 +1257,26 @@ function downloadCsv(filename, rows) {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
+/* 完整原始資料匯出：每張表所有欄位（含 id/created_at/family_code），不經篩選、不重新格式化，
+   是真正的備份，不是給人閱讀用的精簡版。 */
+const RAW_EXPORT_TABLES = {
+  vitals:     { file: '生命徵象', cols: ['id', 'ts', 'temp', 'sys', 'dia', 'spo2', 'hr', 'glucose', 'recorder', 'note', 'family_code', 'created_at'] },
+  io_records: { file: '飲水排泄', cols: ['id', 'ts', 'type', 'amount', 'detail', 'recorder', 'note', 'family_code', 'created_at'] },
+  logs:       { file: '交班日誌', cols: ['id', 'ts', 'author', 'text', 'family_code', 'created_at'] },
+  members:    { file: '家人成員', cols: ['id', 'name', 'color', 'family_code', 'created_at'] },
+  shifts:     { file: '排班', cols: ['id', 'date', 'start_time', 'end_time', 'member_id', 'family_code', 'created_at'] },
+};
 $('#btnExportCsv').addEventListener('click', () => {
   const d = new Date(), stamp = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
-  const vRows = [['日期時間','體溫(°C)','收縮壓(mmHg)','舒張壓(mmHg)','血氧SpO2(%)','心率(次/分)','血糖(mg/dL)','記錄者','備註','異常項目']];
-  [...state.data.vitals].reverse().forEach(v => {
-    const dt = new Date(v.ts);
-    vRows.push([
-      `${dt.getFullYear()}/${pad(dt.getMonth()+1)}/${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`,
-      v.temp ?? '', v.sys ?? '', v.dia ?? '', v.spo2 ?? '', v.hr ?? '', v.glucose ?? '',
-      v.recorder ?? '', v.note ?? '', vitalIssues(v).join('、'),
-    ]);
-  });
-  downloadCsv(`照護紀錄_生命徵象_${stamp}.csv`, vRows);
-  if (state.data.io_records.length) {
-    const ioRows = [['日期時間','類型','數量(cc)','細項','記錄者','備註']];
-    [...state.data.io_records].reverse().forEach(r => {
-      const dt = new Date(r.ts);
-      ioRows.push([
-        `${dt.getFullYear()}/${pad(dt.getMonth()+1)}/${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`,
-        { water: '喝水', urine: '小便', stool: '大便' }[r.type] || r.type,
-        r.amount ?? '', r.detail ?? '', r.recorder ?? '', r.note ?? '',
-      ]);
-    });
-    downloadCsv(`照護紀錄_飲水排泄_${stamp}.csv`, ioRows);
+  let exported = 0;
+  for (const [table, def] of Object.entries(RAW_EXPORT_TABLES)) {
+    const rows = state.data[table] || [];
+    if (!rows.length) continue;
+    const csvRows = [def.cols, ...rows.map(r => def.cols.map(c => r[c] ?? ''))];
+    downloadCsv(`照護紀錄_${def.file}_${stamp}.csv`, csvRows);
+    exported++;
   }
-  if (state.data.logs.length) {
-    const lRows = [['日期時間','留言者','內容']];
-    [...state.data.logs].reverse().forEach(l => {
-      const dt = new Date(l.ts);
-      lRows.push([`${dt.getFullYear()}/${pad(dt.getMonth()+1)}/${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`, l.author ?? '', l.text ?? '']);
-    });
-    downloadCsv(`照護紀錄_日誌_${stamp}.csv`, lRows);
-  }
-  toast('已匯出 CSV，可傳給醫師參考');
+  toast(exported ? `✅ 已匯出完整原始資料（${exported} 個檔案），可傳給醫師參考或自行保存備份` : '目前尚無資料可匯出');
 });
 
 /* ============ 圖表頁 ============ */
