@@ -660,6 +660,18 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
   </div>
 </div>
 
+<!-- ======== 加入連結後：選擇/輸入身分 ======== -->
+<div class="overlay" id="whoAmIModal">
+  <div class="sheet">
+    <h3>歡迎加入！<button class="close-x" data-close="whoAmIModal">✕</button></h3>
+    <p style="font-size:.92rem;color:var(--ink-2);margin-bottom:12px">請選擇或輸入您的稱呼，之後記錄時會顯示這個名字（點選現有稱呼可直接開始使用）。</p>
+    <div class="chip-row" id="whoAmIChips"></div>
+    <div class="field"><label>不在名單裡？輸入新的稱呼</label>
+      <input type="text" id="whoAmIInput" placeholder="例如：二哥"></div>
+    <button class="btn" id="btnWhoAmIStart">✅ 開始使用</button>
+  </div>
+</div>
+
 <!-- ======== 加入主畫面說明 ======== -->
 <div class="overlay" id="installModal">
   <div class="sheet">
@@ -1881,8 +1893,13 @@ $('#btnSaveQuick').addEventListener('click', async () => {
 });
 
 /* ============ 設定 ============ */
-function inviteLink() {
+/* withMe=true：個人捷徑連結，內含自己的稱呼，打開即完成登入，不用再輸入任何東西 */
+function inviteLink(withMe) {
   const payload = { u: config.url, k: config.key, f: config.family, p: config.patient };
+  if (withMe) {
+    const me = lsGet('takecare_me', '');
+    if (me) payload.m = me;
+  }
   const b64 = btoa(encodeURIComponent(JSON.stringify(payload)));
   return location.origin + location.pathname + '#join=' + b64;
 }
@@ -1903,7 +1920,15 @@ $('#btnSettings').addEventListener('click', () => {
         <button class="btn secondary sm" id="btnCopyInvite" type="button">📋 複製連結</button>
         <button class="btn secondary sm" id="btnShareInvite" type="button">📤 分享給家人</button>
       </div>
-      <p class="muted-note" style="margin:0 0 12px">家人在手機上打開這個連結，就會自動完成設定、看到同一份資料。</p>`;
+      <p class="muted-note" style="margin:0 0 12px">家人在手機上打開這個連結，就會自動完成設定、看到同一份資料。</p>
+      ${lsGet('takecare_me', '') ? `
+      <label style="display:block;font-size:.88rem;font-weight:700;color:var(--ink-2);margin-bottom:5px">🔖 我的個人捷徑連結</label>
+      <div class="invite-box" id="myLinkBox">${esc(inviteLink(true))}</div>
+      <div class="btn-row" style="margin-bottom:8px">
+        <button class="btn secondary sm" id="btnCopyMyLink" type="button">📋 複製連結</button>
+        <button class="btn secondary sm" id="btnShareMyLink" type="button">📤 分享/收藏</button>
+      </div>
+      <p class="muted-note" style="margin:0 0 12px">這個連結已包含您的稱呼，建議傳給自己保存（例如 LINE「傳給自己」、備忘錄、瀏覽器書籤）。就算手機清除了瀏覽器資料，打開這個連結也能立即恢復登入，不用重新輸入任何東西。</p>` : ''}`;
     $('#btnCopyInvite').addEventListener('click', async () => {
       try { await navigator.clipboard.writeText(inviteLink()); toast('已複製邀請連結'); }
       catch { toast('複製失敗，請長按連結手動複製'); }
@@ -1912,6 +1937,15 @@ $('#btnSettings').addEventListener('click', () => {
       const url = inviteLink();
       if (navigator.share) { try { await navigator.share({ title: '家庭照護紀錄', text: '加入我們的照護紀錄', url }); } catch {} }
       else { try { await navigator.clipboard.writeText(url); toast('已複製邀請連結'); } catch {} }
+    });
+    $('#btnCopyMyLink')?.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(inviteLink(true)); toast('已複製個人捷徑連結'); }
+      catch { toast('複製失敗，請長按連結手動複製'); }
+    });
+    $('#btnShareMyLink')?.addEventListener('click', async () => {
+      const url = inviteLink(true);
+      if (navigator.share) { try { await navigator.share({ title: '我的照護紀錄捷徑', text: '我的個人登入捷徑連結', url }); } catch {} }
+      else { try { await navigator.clipboard.writeText(url); toast('已複製個人捷徑連結'); } catch {} }
     });
   } else {
     cs.innerHTML = `
@@ -2041,7 +2075,9 @@ $('#btnLocalStart').addEventListener('click', async () => {
   startApp();
 });
 
-/* 邀請連結：#join=base64 */
+/* 邀請連結：#join=base64。個人捷徑連結內含 m（自己的稱呼），可直接登入；
+   家庭邀請連結沒有 m，資料載入後改用 whoAmI 選單讓使用者挑選/輸入身分（取代舊版陽春的 prompt()）。 */
+let needsWhoAmI = false;
 function tryJoinLink() {
   const m = location.hash.match(/#join=(.+)/);
   if (!m) return false;
@@ -2051,25 +2087,38 @@ function tryJoinLink() {
       config = { mode: 'cloud', url: p.u, key: p.k, family: p.f, patient: p.p || '' };
       lsSet('takecare_config', config);
       history.replaceState(null, '', location.pathname + location.search);
-      if (!lsGet('takecare_me', '')) {
-        setTimeout(() => {
-          const me = prompt('歡迎加入！請輸入您的稱呼（例如：二哥），記錄時會顯示這個名字：');
-          if (me && me.trim()) {
-            lsSet('takecare_me', me.trim());
-            DB.list('members').then(members => {
-              if (!members.some(x => x.name === me.trim())) {
-                const used = new Set(members.map(x => x.color));
-                return DB.insert('members', { name: me.trim(), color: MEMBER_COLORS.find(c => !used.has(c)) || MEMBER_COLORS[0] });
-              }
-            }).then(() => refreshAll()).catch(console.warn);
-          }
-        }, 400);
-      }
+      if (p.m) lsSet('takecare_me', p.m);
+      else if (!lsGet('takecare_me', '')) needsWhoAmI = true;
       return true;
     }
   } catch (e) { console.warn('join link parse failed', e); }
   return false;
 }
+
+/* ============ 加入後選擇/輸入身分 ============ */
+function openWhoAmI() {
+  const chips = state.data.members.map(m =>
+    `<button type="button" class="chip" data-name="${esc(m.name)}">${esc(m.name)}</button>`).join('');
+  $('#whoAmIChips').innerHTML = chips || '<p class="muted-note" style="margin:0">目前還沒有家人資料，請直接在下方輸入。</p>';
+  $('#whoAmIInput').value = '';
+  $('#whoAmIModal').classList.add('show');
+}
+async function confirmWhoAmI(name) {
+  lsSet('takecare_me', name);
+  $('#whoAmIModal').classList.remove('show');
+  const added = await ensureSelfMember();
+  if (added) await refreshAll(); else renderAll();
+  toast(`👋 歡迎，${name}！`);
+}
+$('#whoAmIChips').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  confirmWhoAmI(b.dataset.name);
+});
+$('#btnWhoAmIStart').addEventListener('click', () => {
+  const name = $('#whoAmIInput').value.trim();
+  if (!name) { toast('請選擇或輸入您的稱呼'); return; }
+  confirmWhoAmI(name);
+});
 
 /* ============ 渲染與啟動 ============ */
 function renderAll() {
@@ -2114,7 +2163,11 @@ function startApp() {
   $('#setupScreen').classList.remove('show');
   $('#appRoot').style.display = 'block';
   applyConfig();
-  refreshAll(true).then(() => ensureSelfMember()).then(added => { if (added) refreshAll(); });
+  refreshAll(true).then(async () => {
+    if (needsWhoAmI) { needsWhoAmI = false; openWhoAmI(); return; }
+    const added = await ensureSelfMember();
+    if (added) refreshAll();
+  });
   startPolling();
   // 主畫面捷徑（長按 App 圖示）帶 ?quick=xxx 直接打開對應的快速記錄
   const qp = new URLSearchParams(location.search).get('quick');
@@ -2126,6 +2179,8 @@ function startApp() {
 
 /* ============ 加入主畫面（PWA 安裝） ============ */
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+/* 要求持久化儲存，降低長時間沒開啟時登入資料被系統自動清除的機率（尤其加入主畫面後的獨立模式） */
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 
 const isStandalone = () =>
   window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
