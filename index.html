@@ -382,6 +382,35 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
   background:var(--teal-50);border-radius:12px;padding:11px 13px;font-size:.8rem;color:var(--ink-2);
   word-break:break-all;max-height:90px;overflow-y:auto;margin-bottom:10px;
 }
+/* Hero IO banner */
+.hero-io{border-radius:var(--radius);padding:16px;margin-bottom:14px;background:linear-gradient(135deg,#e8f5f3 0%,#dff0ee 100%);box-shadow:var(--shadow)}
+.hero-io h2{font-size:.95rem;color:var(--teal-700);font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.hero-io h2 .spacer{flex:1}
+.hero-io-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.hero-stat{background:rgba(255,255,255,.75);border-radius:12px;padding:14px;text-align:center}
+.hero-stat .hs-icon{font-size:1.5rem;line-height:1;margin-bottom:4px}
+.hero-stat .hs-val{font-size:2rem;font-weight:800;letter-spacing:-.5px;color:var(--ink);line-height:1.1}
+.hero-stat .hs-sub{font-size:.76rem;color:var(--ink-2);font-weight:600;margin-top:3px}
+.hero-balance{border-radius:10px;padding:9px 14px;font-size:.9rem;font-weight:700;text-align:center;margin-bottom:8px}
+.hero-balance.bal-pos{background:#dff0e8;color:#1f7a44}
+.hero-balance.bal-neg{background:#fdecea;color:#c0392b}
+.hero-balance.bal-neu{background:var(--teal-50);color:var(--teal-700)}
+.hero-timer{font-size:.85rem;color:var(--ink-2);display:flex;align-items:center;gap:5px}
+.hero-timer .overdue-tag{color:var(--danger);font-weight:700}
+/* Patient info in header */
+.topbar-sub{font-size:.75rem;color:var(--ink-2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
+/* Meds category */
+.qcat-meds{background:#f0edfb}
+.qcat-meds .qcat-label{color:#5b3fa7}
+.qcat-meds .qt-plus{background:#7c5abf}
+/* Medication card */
+.meds-item{padding:9px 0;border-bottom:1px solid var(--grid)}
+.meds-item:last-child{border-bottom:none}
+.meds-meta{font-size:.76rem;color:var(--muted);margin-bottom:2px}
+.meds-name{font-size:.95rem;font-weight:700;color:var(--ink)}
+.meds-reaction{font-size:.82rem;color:var(--teal-700);font-weight:600;margin-top:2px}
+/* Room badge in header */
+.room-badge{font-size:.72rem;font-weight:700;background:var(--teal-50);color:var(--teal-700);border-radius:8px;padding:2px 7px;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -423,7 +452,10 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
 
 <div class="app" id="appRoot" style="display:none">
   <header class="topbar">
-    <h1 id="appTitle">家庭照護紀錄</h1>
+    <div style="flex:1;min-width:0;overflow:hidden">
+      <h1 id="appTitle" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">家庭照護紀錄</h1>
+      <div id="roomBadgeWrap"></div>
+    </div>
     <button class="sync-pill local" id="syncPill" title="點一下立即重新同步">本機</button>
     <button class="icon-btn" id="btnInstall" aria-label="加入主畫面" style="display:none">📲</button>
     <button class="icon-btn" id="btnSettings" aria-label="設定">⚙️</button>
@@ -433,17 +465,17 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
     <!-- ======== 首頁 ======== -->
     <section class="view active" id="view-home">
       <div id="homeAlert"></div>
-      <div class="card" id="pinnedInfoCard" style="display:none"></div>
+      <div id="heroBanner"></div>
+      <div class="card duty-card" id="dutyCard"></div>
       <div class="card">
         <h2>⚡ 快速記錄</h2>
         <div id="quickGrid">
-          <div class="qcat qcat-vitals">
-            <div class="qcat-label">🩺 生命徵象</div>
+          <div class="qcat qcat-out">
+            <div class="qcat-label">⬆️ 輸出</div>
             <div class="quick-grid">
-              <button class="quick-tile" data-quick="vitals"><span class="qt-icon">🩺</span>生命徵象<span class="qt-plus">＋</span></button>
-              <button class="quick-tile" data-quick="temp"><span class="qt-icon">🌡️</span>只量體溫<span class="qt-plus">＋</span></button>
-              <button class="quick-tile" data-quick="glucose"><span class="qt-icon">🩸</span>血糖<span class="qt-plus">＋</span></button>
-              <button class="quick-tile" data-quick="weight"><span class="qt-icon">⚖️</span>體重<span class="qt-plus">＋</span></button>
+              <button class="quick-tile" data-quick="urine"><span class="qt-icon">🚽</span>小便<span class="qt-plus">＋</span></button>
+              <button class="quick-tile" data-quick="stool"><span class="qt-icon">💩</span>大便<span class="qt-plus">＋</span></button>
+              <button class="quick-tile" data-quick="vomit"><span class="qt-icon">🤢</span>嘔吐<span class="qt-plus">＋</span></button>
             </div>
           </div>
           <div class="qcat qcat-in">
@@ -454,28 +486,29 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
               <button class="quick-tile" data-quick="iv"><span class="qt-icon">💉</span>打點滴<span class="qt-plus">＋</span></button>
             </div>
           </div>
-          <div class="qcat qcat-out">
-            <div class="qcat-label">⬆️ 輸出</div>
+          <div class="qcat qcat-vitals">
+            <div class="qcat-label">🩺 生命徵象</div>
             <div class="quick-grid">
-              <button class="quick-tile" data-quick="urine"><span class="qt-icon">🚽</span>小便<span class="qt-plus">＋</span></button>
-              <button class="quick-tile" data-quick="stool"><span class="qt-icon">💩</span>大便<span class="qt-plus">＋</span></button>
-              <button class="quick-tile" data-quick="vomit"><span class="qt-icon">🤢</span>嘔吐<span class="qt-plus">＋</span></button>
+              <button class="quick-tile" data-quick="vitals"><span class="qt-icon">🩺</span>生命徵象<span class="qt-plus">＋</span></button>
+              <button class="quick-tile" data-quick="temp"><span class="qt-icon">🌡️</span>只量體溫<span class="qt-plus">＋</span></button>
+              <button class="quick-tile" data-quick="glucose"><span class="qt-icon">🩸</span>血糖<span class="qt-plus">＋</span></button>
+              <button class="quick-tile" data-quick="weight"><span class="qt-icon">⚖️</span>體重<span class="qt-plus">＋</span></button>
             </div>
           </div>
-          <div class="qcat qcat-other">
-            <div class="qcat-label">📋 其他</div>
+          <div class="qcat qcat-meds">
+            <div class="qcat-label">💊 用藥與其他</div>
             <div class="quick-grid">
+              <button class="quick-tile" data-quick="meds"><span class="qt-icon">💊</span>記錄用藥<span class="qt-plus">＋</span></button>
               <button class="quick-tile" data-quick="log"><span class="qt-icon">📝</span>交班留言<span class="qt-plus">＋</span></button>
             </div>
           </div>
         </div>
       </div>
-      <div class="card" id="familyCard"></div>
-      <div class="card" id="urineTimerCard"></div>
-      <div class="card duty-card" id="dutyCard"></div>
       <div class="vitals-updated" id="vitalsUpdated"></div>
       <div class="vitals-grid" id="vitalsGrid" style="margin-bottom:14px"></div>
-      <div class="card" id="ioSummaryCard"></div>
+      <div class="card" id="medsCard" style="display:none"></div>
+      <div class="card" id="pinnedInfoCard" style="display:none"></div>
+      <div class="card" id="familyCard"></div>
       <div class="card">
         <h2>📋 病房照護指南 <span class="spacer"></span>
           <button class="link-btn" id="btnOpenGuide">查看完整指南 ›</button></h2>
@@ -713,6 +746,40 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
 </div>
 
 <!-- ======== 加入連結後：選擇/輸入身分 ======== -->
+<div class="overlay" id="medsModal">
+  <div class="sheet">
+    <h3>💊 記錄用藥<button class="close-x" data-close="medsModal">✕</button></h3>
+    <div class="field"><label>藥名</label>
+      <input type="text" id="medsName" placeholder="例如：普拿疼 500mg" autocomplete="off">
+      <div class="chip-row" id="medsNameChips" style="margin-top:6px">
+        <button type="button" class="chip" data-v="普拿疼 500mg">普拿疼</button>
+        <button type="button" class="chip" data-v="Aspirin">Aspirin</button>
+        <button type="button" class="chip" data-v="胰島素">胰島素</button>
+        <button type="button" class="chip" data-v="降血壓藥">降血壓藥</button>
+      </div>
+    </div>
+    <div class="field"><label>備註（劑量、給藥方式等）</label>
+      <input type="text" id="medsNote" placeholder="例如：口服、皮下注射 10 units" autocomplete="off">
+    </div>
+    <div class="field"><label>用藥後反應</label>
+      <div class="chip-row" id="medsReactionChips">
+        <button type="button" class="chip" data-v="無明顯反應">無明顯反應</button>
+        <button type="button" class="chip" data-v="有效">有效</button>
+        <button type="button" class="chip" data-v="輕微不適">輕微不適</button>
+        <button type="button" class="chip" data-v="需觀察">需觀察</button>
+      </div>
+    </div>
+    <div class="field"><label>目前意識狀態</label>
+      <div class="chip-row" id="medsConsciousnessChips">
+        <button type="button" class="chip" data-v="清醒">清醒</button>
+        <button type="button" class="chip" data-v="嗜睡">嗜睡</button>
+        <button type="button" class="chip" data-v="躁動">躁動</button>
+        <button type="button" class="chip" data-v="昏睡">昏睡</button>
+      </div>
+    </div>
+    <button class="btn" id="btnSaveMeds" style="margin-top:4px">儲存用藥記錄</button>
+  </div>
+</div>
 <div class="overlay" id="whoAmIModal">
   <div class="sheet">
     <h3>歡迎加入！<button class="close-x" data-close="whoAmIModal">✕</button></h3>
@@ -737,6 +804,7 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
   <div class="sheet">
     <h3>設定<button class="close-x" data-close="settingsModal">✕</button></h3>
     <div class="field"><label>病人稱呼</label><input type="text" id="setPatient"></div>
+    <div class="field"><label>病房號碼</label><input type="text" id="setRoom" placeholder="例如：302"></div>
     <div class="field"><label>我的稱呼（預設記錄者）</label><input type="text" id="setMe"></div>
     <div class="field"><label>小便倒數間隔（記錄小便後開始倒數）</label>
       <div class="wheel-row" style="margin-bottom:0"><div class="wheel-col">
@@ -1285,6 +1353,38 @@ function switchTab(tab) {
 }
 $$('.tab').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
 
+/* ============ 用藥紀錄（存入 logs，以 [用藥] 前綴識別） ============ */
+const MEDS_PREFIX = '[用藥]';
+const isMedsLog = l => String(l.text || '').startsWith(MEDS_PREFIX);
+function parseMedsLog(text) {
+  const lines = String(text || '').split('\n');
+  return {
+    name: (lines[0] || '').replace(MEDS_PREFIX, '').trim(),
+    note: (lines.find(l => l.startsWith('備註：')) || '').replace('備註：', '').trim(),
+    reaction: (lines.find(l => l.startsWith('反應：')) || '').replace('反應：', '').trim(),
+    consciousness: (lines.find(l => l.startsWith('意識：')) || '').replace('意識：', '').trim(),
+  };
+}
+function renderMedsCard() {
+  const el = $('#medsCard');
+  if (!el) return;
+  const medsLogs = state.data.logs.filter(isMedsLog).slice(0, 5);
+  if (!medsLogs.length) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = `
+    <h2>💊 最近用藥 <span class="spacer"></span>
+      <button class="link-btn" onclick="document.getElementById('btnAllLogs').click()">查看全部 ›</button></h2>
+    ${medsLogs.map(l => {
+      const p = parseMedsLog(l.text);
+      return `<div class="meds-item">
+        <div class="meds-meta">${esc(fmtDT(l.ts))} · ${esc(l.author || '家人')}</div>
+        <div class="meds-name">${esc(p.name)}</div>
+        ${p.note ? `<div style="font-size:.82rem;color:var(--ink-2)">${esc(p.note)}</div>` : ''}
+        ${p.reaction || p.consciousness ? `<div class="meds-reaction">${[p.reaction, p.consciousness].filter(Boolean).map(esc).join(' · ')}</div>` : ''}
+      </div>`;
+    }).join('')}`;
+}
+
 /* ============ 首頁 ============ */
 function memberByName(name) { return state.data.members.find(m => m.name === name); }
 function memberById(id) { return state.data.members.find(m => m.id === id); }
@@ -1383,8 +1483,8 @@ function renderHome() {
   $('#homeLogs').innerHTML = logs.length ? logs.map(logItemHtml).join('')
     : '<p style="color:var(--muted);font-size:.92rem">還沒有留言，寫下第一則交班備註吧。</p>';
 
-  renderIoSummary();
-  renderUrineTimer();
+  renderHeroBanner();
+  renderMedsCard();
   renderPinnedInfo();
   renderFamilyCard();
 }
@@ -1456,59 +1556,69 @@ function renderPinnedInfo() {
 /* 大便紀錄若勾了「有小便」，也算一次小便事件（會重置倒數） */
 const isUrineEvent = r => r.type === 'urine' || (r.type === 'stool' && String(r.detail || '').includes('有小便'));
 
-/* 今日總覽：橫向捲動，涵蓋全部輸入/輸出類型 */
-function renderIoSummary() {
+/* 今日進出量英雄橫幅（取代舊 ioSummaryCard + urineTimerCard） */
+function renderHeroBanner() {
   const todayK = dateKey(new Date());
   const todays = state.data.io_records.filter(r => dateKey(new Date(r.ts)) === todayK);
   const sumCc = arr => arr.reduce((s, r) => s + (Number(r.amount) || 0), 0);
-  const byType = t => todays.filter(r => r.type === t);
-  const water = byType('water'), food = byType('food'), iv = byType('iv');
-  const urine = byType('urine'), stool = byType('stool'), vomit = byType('vomit');
+  const urineRecs = todays.filter(r => r.type === 'urine');
   const urineCount = todays.filter(isUrineEvent).length;
+  const urineTotal = sumCc(urineRecs);
+  const waterTotal = sumCc(todays.filter(r => r.type === 'water'));
+  const ivTotal = sumCc(todays.filter(r => r.type === 'iv'));
+  const intakeTotal = waterTotal + ivTotal;
+  const balance = intakeTotal - urineTotal;
+  const balanceClass = balance > 200 ? 'bal-pos' : balance < -200 ? 'bal-neg' : 'bal-neu';
+  const balanceTxt = intakeTotal === 0 && urineTotal === 0
+    ? '今日尚無進出量紀錄'
+    : balance > 0 ? `＋${balance} cc　入多於出`
+    : balance < 0 ? `${-balance} cc　出多於入`
+    : '入出平衡';
 
-  const items = [
-    { icon: '💧', label: '喝水/飲品', count: water.length, cc: sumCc(water) },
-    { icon: '🍚', label: '吃東西', count: food.length },
-    { icon: '💉', label: '打點滴', count: iv.length, cc: sumCc(iv) },
-    { icon: '🚽', label: '小便', count: urineCount, cc: sumCc(urine), ccPrefix: '約' },
-    { icon: '💩', label: '大便', count: stool.length },
-    { icon: '🤢', label: '嘔吐', count: vomit.length, cc: sumCc(vomit) },
-  ];
-  $('#ioSummaryCard').innerHTML = `
-    <h2>🧴 今日總覽</h2>
-    <div class="today-strip">${items.map(it => `
-      <div class="today-item">
-        <div class="ti-icon">${it.icon}</div>
-        <div class="ti-num">${it.count}<small style="font-size:.7rem;font-weight:600">次</small></div>
-        ${it.cc ? `<div class="ti-amt">${it.ccPrefix || ''}${it.cc}cc</div>` : ''}
-        <div class="ti-label">${it.label}</div>
-      </div>`).join('')}</div>`;
+  const iv2 = urineInterval();
+  const lastUrine = state.data.io_records.find(isUrineEvent);
+  let timerHtml = '⏱ 尚無小便紀錄';
+  if (lastUrine) {
+    const elapsed = Math.max(0, Math.floor((Date.now() - new Date(lastUrine.ts)) / 60000));
+    const remain = iv2 - elapsed;
+    const fmtMin = m => m >= 60 ? `${Math.floor(m / 60)} 小時 ${m % 60} 分` : `${m} 分`;
+    timerHtml = remain >= 0
+      ? `⏱ 距下次小便：${fmtMin(remain)}`
+      : `<span class="overdue-tag">⚠ 小便已超過 ${fmtMin(-remain)}，請提醒！</span>`;
+  }
+
+  const el = $('#heroBanner');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="hero-io">
+      <h2>🧴 今日進出量
+        <span class="spacer"></span>
+        <button id="btnRefreshBanner" aria-label="重新整理" style="font-size:.95rem;line-height:1;color:var(--teal-600);padding:2px">↻</button>
+      </h2>
+      <div class="hero-io-row">
+        <div class="hero-stat">
+          <div class="hs-icon">🚽</div>
+          <div class="hs-val">${urineTotal > 0 ? urineTotal : '－'}<small style="font-size:.9rem;font-weight:600"> cc</small></div>
+          <div class="hs-sub">今日尿量 · ${urineCount} 次</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hs-icon">💧</div>
+          <div class="hs-val">${intakeTotal > 0 ? intakeTotal : '－'}<small style="font-size:.9rem;font-weight:600"> cc</small></div>
+          <div class="hs-sub">今日入量（水 ${waterTotal}＋點滴 ${ivTotal}）</div>
+        </div>
+      </div>
+      <div class="hero-balance ${balanceClass}">${balanceTxt}</div>
+      <div class="hero-timer">${timerHtml}</div>
+    </div>`;
+  document.getElementById('btnRefreshBanner')?.addEventListener('click', () => refreshAll());
 }
 
-/* 小便倒數計時：每記錄一次小便（含大便順便）就重新起算 */
+/* 小便倒數計時：整合進 hero banner，保留 urineInterval 供 renderHeroBanner 使用 */
 const urineInterval = () => {
   const v = +lsGet('takecare_urine_interval', 120);
   return Number.isFinite(v) && v >= 30 ? v : 120;
 };
-function renderUrineTimer() {
-  const el = $('#urineTimerCard');
-  if (!el) return;
-  const iv = urineInterval();
-  const last = state.data.io_records.find(isUrineEvent); // 已依時間新→舊排序
-  if (!last) {
-    el.innerHTML = `<h2>⏱️ 小便倒數</h2>
-      <p style="color:var(--muted);font-size:.92rem">尚無小便紀錄，記錄一次後開始倒數 ${iv} 分鐘。</p>`;
-    return;
-  }
-  const fmtMin = m => m >= 60 ? `${Math.floor(m / 60)} 小時 ${m % 60} 分` : `${m} 分`;
-  const elapsed = Math.max(0, Math.floor((Date.now() - new Date(last.ts)) / 60000));
-  const remain = iv - elapsed;
-  el.innerHTML = `<h2>⏱️ 小便倒數 <span class="spacer"></span>
-      <span style="font-size:.78rem;font-weight:600;color:var(--muted)">間隔 ${iv} 分</span></h2>
-    <div class="urine-timer-main${remain < 0 ? ' overdue' : ''}">${remain >= 0 ? '再 ' + fmtMin(remain) : '⚠ 已超過 ' + fmtMin(-remain)}</div>
-    <div class="urine-timer-sub">上次小便：${esc(fmtDT(last.ts))}${last.type === 'stool' ? '（大便時順便）' : ''} · 距今 ${fmtMin(elapsed)}</div>`;
-}
-setInterval(() => { if (config && state.tab === 'home') renderUrineTimer(); }, 30000);
+setInterval(() => { if (config && state.tab === 'home') renderHeroBanner(); }, 30000);
 
 function logItemHtml(l) {
   const m = memberByName(l.author);
@@ -2100,6 +2210,7 @@ const QUICK_DEFS = {
   urine:  { title: '🚽 記錄小便', kind: 'io', ioType: 'urine', amountLabel: '尿量', chips: [100, 200, 300, 400], locChips: ['尿壺', '廁所'], toastLabel: '小便' },
   stool:  { title: '💩 記錄大便', kind: 'io', ioType: 'stool', typeOnly: ['正常成形', '稀便', '偏硬', '血便'], locChips: ['排便椅', '廁所'], urineToo: true, toastLabel: '大便' },
   vomit:  { title: '🤢 記錄嘔吐', kind: 'io', ioType: 'vomit', amountLabel: '嘔吐量', chips: [50, 100, 200, 300], toastLabel: '嘔吐' },
+  meds:   { title: '💊 記錄用藥', kind: 'meds', toastLabel: '用藥' },
 };
 let quickType = null;
 let qWheels = {};   // 本次 modal 的滾輪
@@ -2142,6 +2253,7 @@ function updateSop() {
 
 async function openQuickModal(type) {
   await requireIdentity();
+  if (type === 'meds') { openMedsModal(); return; }
   quickType = type;
   const def = QUICK_DEFS[type];
   qWheels = {}; qEnabled = {};
@@ -2320,6 +2432,7 @@ const appUrl = () => location.origin + location.pathname;
 $('#btnSettings').addEventListener('click', () => {
   $('#setPatient').value = (config && config.patient) || '';
   $('#setMe').value = lsGet('takecare_me', '');
+  if ($('#setRoom')) $('#setRoom').value = config && config.room ? config.room : '';
   const pinned = latestPinnedLog();
   const pv = pinned ? parsePinnedLog(pinned.text) : { contact: '', wish: '' };
   $('#setEmergencyContact').value = pv.contact;
@@ -2380,7 +2493,9 @@ $('#btnSavePinned').addEventListener('click', async () => {
 $('#btnSaveSettings').addEventListener('click', async () => {
   const patient = $('#setPatient').value.trim();
   const me = $('#setMe').value.trim();
+  const room = $('#setRoom')?.value.trim() || '';
   if (me) lsSet('takecare_me', me);
+  config.room = room;
   if (settingsUrineWheel) lsSet('takecare_urine_interval', settingsUrineWheel.value);
   config = config || { mode: 'local' };
   config.patient = patient;
@@ -2522,6 +2637,32 @@ function openWhoAmI() {
   $('#whoAmIInput').value = '';
   $('#whoAmIModal').classList.add('show');
 }
+/* ============ 用藥記錄 Modal ============ */
+function openMedsModal() {
+  $('#medsName').value = '';
+  $('#medsNote').value = '';
+  $$('#medsNameChips .chip, #medsReactionChips .chip, #medsConsciousnessChips .chip').forEach(c => c.classList.remove('active'));
+  $('#medsModal').classList.add('show');
+  setTimeout(() => $('#medsName').focus(), 200);
+}
+bindChipGroup('medsNameChips', { allowNone: true, onChange: v => { if (v) $('#medsName').value = v; } });
+bindChipGroup('medsReactionChips', { allowNone: true });
+bindChipGroup('medsConsciousnessChips', { allowNone: true });
+$('#btnSaveMeds').addEventListener('click', async () => {
+  const name = $('#medsName').value.trim();
+  if (!name) { toast('請輸入藥名'); return; }
+  const note = $('#medsNote').value.trim();
+  const reaction = chipValue('medsReactionChips') || '';
+  const consciousness = chipValue('medsConsciousnessChips') || '';
+  const lines = [`${MEDS_PREFIX} ${name}`];
+  if (note) lines.push(`備註：${note}`);
+  if (reaction) lines.push(`反應：${reaction}`);
+  if (consciousness) lines.push(`意識：${consciousness}`);
+  const author = lsGet('takecare_me', '') || '家人';
+  const ok = await mutate(() => DB.insert('logs', { ts: new Date().toISOString(), author, text: lines.join('\n') }), '✅ 已記錄用藥');
+  if (ok) { $('#medsModal').classList.remove('show'); renderMedsCard(); renderHome(); }
+});
+
 let whoAmIResolver = null;
 async function confirmWhoAmI(name) {
   lsSet('takecare_me', name);
@@ -2558,6 +2699,8 @@ function renderAll() {
 }
 function applyTitle() {
   $('#appTitle').textContent = (config && config.patient) ? `${config.patient} 的照護紀錄` : '家庭照護紀錄';
+  const roomWrap = $('#roomBadgeWrap');
+  if (roomWrap) roomWrap.innerHTML = (config && config.room) ? `<span class="room-badge">病房 ${esc(config.room)}</span>` : '';
 }
 function applyConfig() {
   setSync(isCloud() ? 'ok' : 'local');
