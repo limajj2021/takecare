@@ -52,7 +52,7 @@ input,select,textarea{font:inherit;color:inherit}
 .topbar h1{font-size:1.18rem;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sync-pill{
   font-size:.78rem;padding:3px 10px;border-radius:99px;font-weight:600;
-  background:var(--teal-50);color:var(--teal-700);white-space:nowrap;
+  background:var(--teal-50);color:var(--teal-700);white-space:nowrap;cursor:pointer;
 }
 .sync-pill.offline{background:#fdf3e0;color:#8a5a00}
 .sync-pill.local{background:#eceff1;color:#546e7a}
@@ -391,7 +391,7 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
 <div class="app" id="appRoot" style="display:none">
   <header class="topbar">
     <h1 id="appTitle">家庭照護紀錄</h1>
-    <span class="sync-pill local" id="syncPill">本機</span>
+    <button class="sync-pill local" id="syncPill" title="點一下立即重新同步">本機</button>
     <button class="icon-btn" id="btnInstall" aria-label="加入主畫面" style="display:none">📲</button>
     <button class="icon-btn" id="btnSettings" aria-label="設定">⚙️</button>
   </header>
@@ -425,6 +425,7 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
           </div>
         </div>
       </div>
+      <div class="card" id="familyCard"></div>
       <div class="card" id="urineTimerCard"></div>
       <div class="card duty-card" id="dutyCard"></div>
       <div class="vitals-grid" id="vitalsGrid" style="margin-bottom:14px"></div>
@@ -477,7 +478,7 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
       </div>
       <div id="weekList"></div>
       <div class="card">
-        <h2>👨‍👩‍👧 家人成員 <span class="spacer"></span>
+        <h2>👨‍👩‍👧 家人成員 <span id="memberCount" style="font-weight:600;color:var(--muted);font-size:.85rem"></span> <span class="spacer"></span>
           <button class="link-btn" id="btnAddMember">＋ 新增</button></h2>
         <div id="memberList"></div>
         <p class="muted-note">每位家人有自己的代表色，排班表用顏色一眼分辨。</p>
@@ -862,7 +863,7 @@ async function flushQueue() {
   if (!isCloud() || flushing) return false;
   flushing = true;
   try {
-    let q = pendingQueue(), changed = false;
+    let q = pendingQueue(), changed = false, dropped = 0;
     while (q.length) {
       const op = q[0];
       try {
@@ -873,12 +874,17 @@ async function flushQueue() {
       } catch (e) {
         if (isNetworkError(e)) break;      // 還是沒網路 → 保留佇列，下次再試
         op.tries = (op.tries || 0) + 1;    // 伺服器錯誤 → 重試幾次仍失敗就放棄該筆，不卡住後面
-        if (op.tries >= 3) { console.warn('佇列項目重試多次仍失敗，已略過', op, e); q.shift(); changed = true; }
+        if (op.tries >= 3) {
+          console.warn('佇列項目重試多次仍失敗，已略過', op, e);
+          q.shift(); changed = true; dropped++;
+        }
         else { setPendingQueue(q); break; }
       }
       setPendingQueue(q);
     }
     if (changed) rtBroadcastChange();
+    // 丟棄的項目要讓使用者知道，否則會以為紀錄已經存好了
+    if (dropped) toast(`⚠ 有 ${dropped} 筆紀錄上傳失敗，請重新輸入`);
     return changed;
   } finally { flushing = false; }
 }
@@ -892,7 +898,7 @@ const DB = {
       return applyPending(table, rows);
     } catch (e) {
       console.warn('list failed, using cache', table, e);
-      setSync('offline');
+      listFailures++;   // 只記錄「這一輪」的失敗，同步狀態由 refreshAll 統一判定
       return applyPending(table, lsGet('takecare_cache_' + table, []));
     }
   },
@@ -974,9 +980,30 @@ function normalizeVitals(rows) {
   }
 }
 
+/* 這一輪刷新有幾張表抓失敗。務必每輪歸零：
+   先前是直接把全域 state.sync 設成 'offline'，而結尾又用 state.sync !== 'offline' 當判斷，
+   導致只要失敗過一次，之後每次成功刷新都不再重畫狀態列——即使佇列早就上傳完畢，
+   藥丸仍會一直卡在「⏳ 待上傳」。 */
+let listFailures = 0;
+
+/* 輪詢、即時推播、回到前景、寫入後刷新可能同時發生。
+   同一時間只跑一輪，期間進來的請求合併成「結束後再補跑一次」，
+   既避免重複打一整輪請求，也保證後到的請求一定看得到最新資料。 */
+let refreshInFlight = null, refreshAgain = false;
 async function refreshAll(showStatus) {
+  if (refreshInFlight) { refreshAgain = true; return refreshInFlight; }
+  refreshInFlight = doRefresh(showStatus);
+  try { await refreshInFlight; }
+  finally {
+    refreshInFlight = null;
+    if (refreshAgain) { refreshAgain = false; await refreshAll(); }
+  }
+}
+
+async function doRefresh(showStatus) {
   if (isCloud() && showStatus) setSync('syncing');
   if (isCloud()) { try { await flushQueue(); } catch (e) { console.warn('flush failed', e); } }
+  listFailures = 0;
   const [vitals, members, shifts, logs, io_records] = await Promise.all(
     ['vitals', 'members', 'shifts', 'logs', 'io_records'].map(t => DB.list(t)));
   state.data = { vitals, members, shifts, logs, io_records };
@@ -987,7 +1014,8 @@ async function refreshAll(showStatus) {
   state.data.logs.sort(byTsDesc);
   state.data.io_records.sort(byTsDesc);
   state.data.shifts.sort((a, b) => (a.date + (a.start_time||'')).localeCompare(b.date + (b.start_time||'')));
-  if (isCloud() && state.sync !== 'offline') setSync(restSyncState());
+  // 無條件重畫狀態列：這一輪全部成功就回到 ⚡/☁，待上傳字樣也會隨佇列清空而消失
+  if (isCloud()) setSync(listFailures ? 'offline' : restSyncState());
   renderAll();
 }
 
@@ -1016,6 +1044,7 @@ async function mutate(fn, okMsg) {
       廣播內容只帶「有東西變了」的訊號，不含任何病人資料。 */
 const RT_TABLES = ['vitals', 'members', 'shifts', 'logs', 'io_records'];
 let rtWs = null, rtRef = 0, rtHeartbeat = null, rtRetry = 0, rtReconnectTimer = null, rtSyncTimer = null;
+let rtConnectedBefore = false;
 const rtTopic = () => `realtime:takecare:${config.family}`;
 
 function rtSend(event, payload, extra) {
@@ -1066,6 +1095,10 @@ function rtConnect() {
         state.realtime = true;
         if (state.sync !== 'offline') setSync('live');
         startPolling();                  // 即時連線成立 → 輪詢放慢當安全網
+        // 只有「重新」連上才需要補抓（斷線期間可能漏掉推播）；
+        // 首次連線時 startApp 已經抓過，不用重複打一輪
+        if (rtConnectedBefore) rtScheduleSync();
+        rtConnectedBefore = true;
       }
     } else if (msg.event === 'postgres_changes' || msg.event === 'broadcast') {
       rtScheduleSync();
@@ -1082,6 +1115,15 @@ function rtDown() {
     startPolling();                      // 即時連線斷掉 → 輪詢加快補上
   }
 }
+/* 點狀態列＝立即重新連線並重試上傳，卡住時使用者有明確可做的動作，不必重開 App */
+$('#syncPill').addEventListener('click', () => {
+  if (!config) return;
+  if (!isCloud()) { toast('目前為本機模式，資料只存在這支手機'); return; }
+  toast(pendingQueue().length ? '正在重新上傳…' : '正在重新同步…');
+  rtConnect();
+  refreshAll(true);
+});
+
 function rtScheduleReconnect() {
   if (!isCloud()) return;
   clearTimeout(rtReconnectTimer);
@@ -1213,6 +1255,42 @@ function renderHome() {
   renderIoSummary();
   renderUrineTimer();
   renderPinnedInfo();
+  renderFamilyCard();
+}
+
+/* ============ 家人總覽：有多少人加入、各自最近何時記錄 ============
+   「最近活動」直接從既有紀錄推導（recorder / author），不需要新增資料表或欄位。 */
+function lastActivityOf(name) {
+  let latest = null;
+  const consider = ts => { if (ts && (!latest || new Date(ts) > new Date(latest))) latest = ts; };
+  for (const v of state.data.vitals) if (v.recorder === name) { consider(v.ts); break; }
+  for (const r of state.data.io_records) if (r.recorder === name) { consider(r.ts); break; }
+  for (const l of state.data.logs) if (l.author === name) { consider(l.ts); break; }
+  return latest;
+}
+function fmtAgo(ts) {
+  const mins = Math.floor((Date.now() - new Date(ts)) / 60000);
+  if (mins < 1) return '剛剛記錄';
+  if (mins < 60) return `${mins} 分鐘前記錄`;
+  if (mins < 60 * 24) return `${Math.floor(mins / 60)} 小時前記錄`;
+  const days = Math.floor(mins / 1440);
+  return days <= 30 ? `${days} 天前記錄` : `${fmtDT(ts)} 記錄`;
+}
+function renderFamilyCard() {
+  const el = $('#familyCard');
+  if (!el) return;
+  const me = lsGet('takecare_me', '');
+  const members = state.data.members;
+  el.innerHTML = `
+    <h2>👨‍👩‍👧 一起照顧的家人（${members.length} 位）</h2>
+    ${members.length ? members.map(m => {
+      const last = lastActivityOf(m.name);
+      return `<div class="member-row">
+        <div class="member-dot" style="background:${esc(m.color)}"></div>
+        <div class="member-name">${esc(m.name)}${m.name === me ? ' <small style="color:var(--muted);font-weight:600">（我）</small>' : ''}</div>
+        <div style="font-size:.82rem;color:var(--muted);white-space:nowrap">${last ? esc(fmtAgo(last)) : '尚未記錄'}</div>
+      </div>`;
+    }).join('') : '<p style="color:var(--muted);font-size:.92rem">還沒有其他家人加入。把 App 網址傳給家人，他們輸入大名就能一起使用。</p>'}`;
 }
 
 /* ============ 緊急聯絡／醫療意願（置頂於交班日誌，全家人共享） ============ */
@@ -1671,6 +1749,7 @@ function renderSchedule() {
   }
   $('#weekList').innerHTML = html;
 
+  $('#memberCount').textContent = state.data.members.length ? `${state.data.members.length} 位` : '';
   $('#memberList').innerHTML = state.data.members.length ? state.data.members.map(m =>
     `<div class="member-row">
       <div class="member-dot" style="background:${esc(m.color)}"></div>
