@@ -94,15 +94,6 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
   display:flex;gap:10px;align-items:flex-start;
 }
 .alert-banner .ai{font-size:1.3rem;line-height:1.3}
-.duty-card{display:flex;gap:12px;align-items:center}
-.duty-avatar{
-  width:56px;height:56px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;
-  color:#fff;font-weight:700;font-size:1.4rem;
-}
-.duty-main{flex:1;min-width:0}
-.duty-label{font-size:.82rem;color:var(--ink-2)}
-.duty-name{font-size:1.35rem;font-weight:800}
-.duty-next{font-size:.88rem;color:var(--ink-2);margin-top:2px}
 .vitals-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 .vital-tile{
   background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
@@ -201,26 +192,6 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
 /* 緊急聯絡／醫療意願 置頂卡 */
 #pinnedInfoCard{border-left:4px solid var(--teal-600)}
 
-/* 照護指南 */
-.guide-sec{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;margin-bottom:12px}
-.guide-sec summary{font-size:1.02rem;font-weight:800;color:var(--ink);cursor:pointer;list-style:none;display:flex;align-items:center}
-.guide-sec summary::-webkit-details-marker{display:none}
-.guide-sec summary::after{content:"›";margin-left:auto;font-size:1.3rem;color:var(--muted);transform:rotate(90deg);transition:transform .15s}
-.guide-sec[open] summary::after{transform:rotate(-90deg)}
-.guide-list{margin-top:10px;display:flex;flex-direction:column;gap:14px}
-.guide-item{padding-top:10px;border-top:1px solid var(--grid)}
-.guide-item:first-child{padding-top:0;border-top:none}
-.gi-title{font-weight:700;font-size:.98rem;margin-bottom:3px}
-.gi-desc{font-size:.9rem;color:var(--ink-2);line-height:1.6}
-.guide-item .btn.sm{margin-top:8px}
-.guide-item .btn-row{margin-top:8px}
-
-.log-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--grid)}
-.log-item:last-child{border-bottom:none}
-.log-dot{width:12px;height:12px;border-radius:50%;flex:none;margin-top:7px;background:var(--teal-500)}
-.log-meta{font-size:.8rem;color:var(--muted)}
-.log-author{font-weight:700;color:var(--ink-2)}
-.log-text{font-size:.98rem;white-space:pre-wrap;word-break:break-word}
 .link-btn{color:var(--teal-600);font-weight:700;font-size:.92rem;padding:6px 4px}
 
 /* ---------- forms ---------- */
@@ -285,28 +256,7 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
   transform:translate(-50%,-100%);display:none;box-shadow:0 3px 10px rgba(0,0,0,.25);
 }
 
-/* ---------- schedule ---------- */
-.week-nav{display:flex;align-items:center;gap:6px;margin-bottom:12px}
-.week-nav .wn-title{flex:1;text-align:center;font-weight:800;font-size:1rem}
-.week-nav .icon-btn{background:var(--card);box-shadow:var(--shadow)}
-.today-btn{font-size:.85rem;font-weight:700;color:var(--teal-600);padding:8px 10px;background:var(--card);border-radius:11px;box-shadow:var(--shadow)}
-.day-row{
-  background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
-  margin-bottom:10px;padding:11px 14px;display:flex;gap:12px;align-items:flex-start;
-}
-.day-row.today{border:2px solid var(--teal-500)}
-.day-date{flex:none;width:52px;text-align:center}
-.day-date .dw{font-size:.8rem;color:var(--ink-2);font-weight:700}
-.day-date .dd{font-size:1.25rem;font-weight:800;line-height:1.2}
-.day-row.today .day-date .dd{color:var(--teal-600)}
-.day-shifts{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}
-.shift-chip{
-  display:flex;align-items:center;gap:8px;padding:7px 11px;border-radius:11px;
-  color:#fff;font-weight:700;font-size:.95rem;text-align:left;width:100%;
-}
-.shift-chip .sc-time{font-weight:600;font-size:.82rem;opacity:.92;margin-left:auto;flex:none}
-.day-empty{color:var(--muted);font-size:.88rem;padding:6px 0}
-.day-add{flex:none;width:36px;height:36px;border-radius:10px;background:var(--teal-50);color:var(--teal-700);font-size:1.25rem;font-weight:700;display:flex;align-items:center;justify-content:center}
+/* ---------- members ---------- */
 .member-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--grid)}
 .member-row:last-child{border-bottom:none}
 .member-dot{width:22px;height:22px;border-radius:50%;flex:none}
@@ -333,31 +283,6 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
 .color-palette{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
 .color-swatch{width:38px;height:38px;border-radius:50%;border:3px solid transparent}
 .color-swatch.sel{border-color:var(--ink);box-shadow:0 0 0 2px #fff inset}
-
-/* full-screen log overlay */
-.fullpage{
-  position:fixed;inset:0;z-index:55;background:var(--bg);display:none;flex-direction:column;
-}
-.fullpage.show{display:flex}
-.fullpage .fp-head{
-  padding:14px 16px;display:flex;align-items:center;gap:10px;background:var(--card);
-  border-bottom:1px solid var(--grid);
-}
-.fullpage .fp-head h3{font-size:1.1rem;font-weight:800;flex:1}
-.fp-body{flex:1;overflow-y:auto;padding:14px 16px;max-width:520px;margin:0 auto;width:100%}
-.tl-date{font-size:.85rem;font-weight:800;color:var(--ink-2);margin:14px 0 6px;position:sticky;top:0;background:var(--bg);padding:4px 0}
-.tl-item{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:11px 14px;margin-bottom:9px;display:flex;gap:10px}
-.fp-input{
-  background:var(--card);border-top:1px solid var(--grid);
-  padding:10px 14px calc(10px + env(safe-area-inset-bottom));
-}
-.fp-input-inner{max-width:520px;margin:0 auto;display:flex;gap:8px;align-items:flex-end}
-.fp-input textarea{
-  flex:1;border:1.5px solid var(--grid);border-radius:14px;padding:10px 13px;background:#fbfdfd;
-  font-size:1rem;resize:none;min-height:46px;max-height:110px;
-}
-.fp-input textarea:focus{outline:none;border-color:var(--teal-500)}
-.fp-send{background:var(--teal-600);color:#fff;border-radius:13px;padding:11px 18px;font-weight:800;flex:none}
 
 /* ---------- setup screen ---------- */
 .setup{position:fixed;inset:0;z-index:70;background:var(--bg);overflow-y:auto;display:none}
@@ -399,10 +324,6 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
 .hero-timer .overdue-tag{color:var(--danger);font-weight:700}
 /* Patient info in header */
 .topbar-sub{font-size:.75rem;color:var(--ink-2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
-/* Meds category */
-.qcat-meds{background:#f0edfb}
-.qcat-meds .qcat-label{color:#5b3fa7}
-.qcat-meds .qt-plus{background:#7c5abf}
 /* Medication card */
 .meds-item{padding:9px 0;border-bottom:1px solid var(--grid)}
 .meds-item:last-child{border-bottom:none}
@@ -466,7 +387,6 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
     <section class="view active" id="view-home">
       <div id="homeAlert"></div>
       <div id="heroBanner"></div>
-      <div class="card duty-card" id="dutyCard"></div>
       <div class="card">
         <h2>⚡ 快速記錄</h2>
         <div id="quickGrid">
@@ -494,12 +414,6 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
               <button class="quick-tile" data-quick="meds"><span class="qt-icon">💊</span>記錄用藥<span class="qt-plus">＋</span></button>
             </div>
           </div>
-          <div class="qcat qcat-meds">
-            <div class="qcat-label">💊 用藥與其他</div>
-            <div class="quick-grid">
-              <button class="quick-tile" data-quick="log"><span class="qt-icon">📝</span>交班留言<span class="qt-plus">＋</span></button>
-            </div>
-          </div>
         </div>
       </div>
       <div class="vitals-updated" id="vitalsUpdated"></div>
@@ -507,17 +421,6 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
       <div class="card" id="medsCard" style="display:none"></div>
       <div class="card" id="pinnedInfoCard" style="display:none"></div>
       <div class="card" id="familyCard"></div>
-      <div class="card">
-        <h2>📋 病房照護指南 <span class="spacer"></span>
-          <button class="link-btn" id="btnOpenGuide">查看完整指南 ›</button></h2>
-        <p style="font-size:.92rem;color:var(--ink-2)">密集監測、快速反應、良好溝通——普通病房也能做到接近加護病房等級的照顧。</p>
-      </div>
-      <div class="card">
-        <h2>📝 交班日誌 <span class="spacer"></span>
-          <button class="link-btn" id="btnAllLogs">查看全部 ›</button></h2>
-        <div id="homeLogs"></div>
-        <button class="btn secondary" id="btnWriteLog" style="margin-top:10px">✏️ 寫交班留言</button>
-      </div>
     </section>
 
     <!-- ======== 紀錄 ======== -->
@@ -526,7 +429,7 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
       <div class="card">
         <h2>📋 歷史紀錄 <span class="spacer"></span>
           <button class="link-btn" id="btnExportCsv">📦 匯出完整原始資料</button></h2>
-        <p class="muted-note" style="margin:0 0 10px">一次匯出全部資料表（生命徵象／飲水排泄／交班日誌／家人／排班）、所有欄位，不經篩選，適合當作完整備份。</p>
+        <p class="muted-note" style="margin:0 0 10px">一次匯出全部資料表（生命徵象／飲水排泄／家人）、所有欄位，不經篩選，適合當作完整備份。</p>
         <div id="recList"></div>
       </div>
       <div class="card">
@@ -545,22 +448,6 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
       <div id="chartsArea"></div>
     </section>
 
-    <!-- ======== 排班 ======== -->
-    <section class="view" id="view-schedule">
-      <div class="week-nav">
-        <button class="icon-btn" id="btnPrevWeek" aria-label="上一週">‹</button>
-        <div class="wn-title" id="weekTitle"></div>
-        <button class="icon-btn" id="btnNextWeek" aria-label="下一週">›</button>
-        <button class="today-btn" id="btnThisWeek">回今天</button>
-      </div>
-      <div id="weekList"></div>
-      <div class="card">
-        <h2>👨‍👩‍👧 家人成員 <span id="memberCount" style="font-weight:600;color:var(--muted);font-size:.85rem"></span> <span class="spacer"></span>
-          <button class="link-btn" id="btnAddMember">＋ 新增</button></h2>
-        <div id="memberList"></div>
-        <p class="muted-note">每位家人有自己的代表色，排班表用顏色一眼分辨。</p>
-      </div>
-    </section>
   </main>
 
   <nav class="tabbar">
@@ -568,157 +455,8 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
       <button class="tab active" data-tab="home"><span class="ti">🏠</span>首頁</button>
       <button class="tab" data-tab="records"><span class="ti">📝</span>紀錄</button>
       <button class="tab" data-tab="charts"><span class="ti">📈</span>圖表</button>
-      <button class="tab" data-tab="schedule"><span class="ti">📅</span>排班</button>
     </div>
   </nav>
-</div>
-
-<!-- ======== 日誌全頁 ======== -->
-<div class="fullpage" id="logPage">
-  <div class="fp-head">
-    <button class="icon-btn" id="btnCloseLogs" aria-label="返回">‹</button>
-    <h3>交班日誌</h3>
-  </div>
-  <div class="fp-body" id="logTimeline"></div>
-  <div class="fp-input">
-    <div class="fp-input-inner">
-      <textarea id="logInput" rows="1" placeholder="留言給下一班的家人…"></textarea>
-      <button class="fp-send" id="btnSendLog">送出</button>
-    </div>
-  </div>
-</div>
-
-<!-- ======== 病房照護指南 ======== -->
-<div class="fullpage" id="guidePage">
-  <div class="fp-head">
-    <button class="icon-btn" id="btnCloseGuide" aria-label="返回">‹</button>
-    <h3>病房照護指南</h3>
-  </div>
-  <div class="fp-body" id="guideBody">
-    <div class="card" style="background:var(--teal-50);box-shadow:none">
-      <p style="font-size:.95rem;line-height:1.7;color:var(--ink-2)">
-        普通病房要做到接近加護病房等級的照護，核心其實是
-        <b style="color:var(--teal-700)">密集監測、快速反應、良好溝通</b>，
-        讓變化能被及早發現、及早處理。
-      </p>
-    </div>
-
-    <details class="guide-sec" open>
-      <summary>🏠 家屬能做的</summary>
-      <div class="guide-list">
-        <div class="guide-item">
-          <div class="gi-title">輪班照顧、隨時有人在</div>
-          <div class="gi-desc">安排家人輪流值班，確保床邊隨時有人觀察狀況，尤其夜間護理人力較少時更重要。</div>
-          <button class="btn secondary sm" data-jump="tab:schedule" type="button">📅 前往排班表</button>
-        </div>
-        <div class="guide-item">
-          <div class="gi-title">記錄生命徵象</div>
-          <div class="gi-desc">定時（例如每 2–4 小時）記錄體溫、血氧、心跳、血壓，異常立即通報護理站。</div>
-          <button class="btn secondary sm" data-jump="quick:vitals" type="button">🩺 立即記錄</button>
-        </div>
-        <div class="guide-item">
-          <div class="gi-title">觀察意識與症狀變化</div>
-          <div class="gi-desc">留意意識是否清楚、呼吸型態（喘、費力）、膚色（發紺）、尿量、疼痛表情等，這些都是病情惡化的早期線索。</div>
-        </div>
-        <div class="guide-item">
-          <div class="gi-title">主動與醫護溝通</div>
-          <div class="gi-desc">每天固定時間找主治醫師或住院醫師詢問病情進展；清楚記下每次醫囑變化、用藥調整；若狀況惡化，明確表達擔憂，必要時可要求會診或轉入加護病房評估。</div>
-          <button class="btn secondary sm" data-jump="log" type="button">📝 記交班留言</button>
-        </div>
-        <div class="guide-item">
-          <div class="gi-title">準備緊急聯絡與決策</div>
-          <div class="gi-desc">確認緊急聯絡人、了解 DNR／急救意願等，避免突發狀況時措手不及。</div>
-          <button class="btn secondary sm" data-jump="settings" type="button">📌 設定緊急資訊</button>
-        </div>
-        <div class="guide-item">
-          <div class="gi-title">環境管理</div>
-          <div class="gi-desc">保持病房整潔、適當光線與安靜，有助病人休息與感染控制。</div>
-        </div>
-      </div>
-    </details>
-
-    <details class="guide-sec">
-      <summary>🧑‍⚕️ 看護能做的</summary>
-      <div class="guide-list">
-        <div class="guide-item">
-          <div class="gi-title">定時翻身拍背</div>
-          <div class="gi-desc">每 2 小時協助翻身，預防壓瘡、肺部併發症（尤其臥床或意識不清病人）。</div>
-        </div>
-        <div class="guide-item">
-          <div class="gi-title">管路照護</div>
-          <div class="gi-desc">留意點滴、導尿管、鼻胃管等是否通暢、有無滲漏或阻塞，異常立即告知護理師。</div>
-        </div>
-        <div class="guide-item">
-          <div class="gi-title">進食與排泄記錄</div>
-          <div class="gi-desc">詳細記錄攝入量（進食、輸液）與排出量（尿量、糞便），這是判斷體液平衡的重要依據。</div>
-          <div class="btn-row">
-            <button class="btn secondary sm" data-jump="quick:water" type="button">💧 喝水</button>
-            <button class="btn secondary sm" data-jump="quick:urine" type="button">🚽 小便</button>
-            <button class="btn secondary sm" data-jump="quick:stool" type="button">💩 大便</button>
-          </div>
-        </div>
-        <div class="guide-item">
-          <div class="gi-title">基礎生理監測</div>
-          <div class="gi-desc">協助測量體溫、血氧，異常立即反映。</div>
-          <button class="btn secondary sm" data-jump="quick:vitals" type="button">🩺 立即記錄</button>
-        </div>
-        <div class="guide-item">
-          <div class="gi-title">協助復健活動</div>
-          <div class="gi-desc">依醫囑進行簡單肢體活動或呼吸訓練，預防肌肉萎縮、深層靜脈栓塞。</div>
-        </div>
-        <div class="guide-item">
-          <div class="gi-title">衛生照護</div>
-          <div class="gi-desc">口腔清潔、皮膚清潔，降低感染風險。</div>
-        </div>
-      </div>
-    </details>
-
-    <details class="guide-sec">
-      <summary>➕ 額外可以爭取的資源</summary>
-      <div class="guide-list">
-        <div class="guide-item">
-          <div class="gi-desc">詢問醫院是否有「加強照護」或「亞急重症」選項（有些醫院有 RCU、次加護病房）</div>
-        </div>
-        <div class="guide-item">
-          <div class="gi-desc">若經濟許可，可考慮聘請有醫療背景的看護（護佐、居家護理師）</div>
-        </div>
-        <div class="guide-item">
-          <div class="gi-desc">主動要求護理站增加巡房頻率，說明擔心的具體原因</div>
-        </div>
-      </div>
-    </details>
-
-    <div class="card" style="background:#fff4ec;box-shadow:none;border:1.5px solid #f2c9a8">
-      <p style="font-size:.95rem;line-height:1.7;color:#a14d00">
-        <b>最關鍵的一點：</b>普通病房人力有限，家屬與看護的「持續在場觀察」加上「即時且具體地反映異常」給醫護人員，
-        往往是縮小與加護病房照護落差最有效的方式。
-      </p>
-    </div>
-  </div>
-</div>
-
-<!-- ======== 班次編輯 ======== -->
-<div class="overlay" id="shiftModal">
-  <div class="sheet">
-    <h3 id="shiftModalTitle">新增班次<button class="close-x" data-close="shiftModal">✕</button></h3>
-    <div class="field"><label>日期</label><input type="date" id="sfDate"></div>
-    <label style="display:block;font-size:.88rem;font-weight:700;color:var(--ink-2);margin-bottom:5px">快速選擇時段</label>
-    <div class="quick-times" id="quickTimes">
-      <button data-s="08:00" data-e="16:00">早班</button>
-      <button data-s="16:00" data-e="23:59">晚班</button>
-      <button data-s="00:00" data-e="08:00">夜班</button>
-      <button data-s="00:00" data-e="23:59">整日</button>
-    </div>
-    <div class="row2">
-      <div class="field"><label>開始時間</label><input type="time" id="sfStart" value="08:00"></div>
-      <div class="field"><label>結束時間</label><input type="time" id="sfEnd" value="16:00"></div>
-    </div>
-    <div class="field"><label>負責家人</label><select id="sfMember"></select></div>
-    <div class="btn-row">
-      <button class="btn danger" id="btnDeleteShift" style="display:none">刪除</button>
-      <button class="btn" id="btnSaveShift">儲存班次</button>
-    </div>
-  </div>
 </div>
 
 <!-- ======== 家人編輯 ======== -->
@@ -814,6 +552,13 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
     <div class="field"><label>醫療意願／DNR 備註</label>
       <input type="text" id="setMedicalWish" placeholder="例如：已簽署 DNR 意願書，不施行心肺復甦"></div>
     <button class="btn secondary sm" id="btnSavePinned" type="button" style="margin-bottom:14px">📌 更新緊急資訊（全家人可見）</button>
+    <div class="field">
+      <label>👨‍👩‍👧 家人成員 <span id="memberCount" style="font-weight:600;color:var(--muted);font-size:.85rem"></span>
+        <button class="link-btn" id="btnAddMember" type="button" style="float:right">＋ 新增</button>
+      </label>
+      <div id="memberList"></div>
+      <p class="muted-note">每位家人有自己的代表色，用來標示紀錄者身分。</p>
+    </div>
     <div id="cloudSettings"></div>
     <button class="btn" id="btnSaveSettings" style="margin-top:4px">儲存設定</button>
     <button class="btn danger" id="btnResetApp" style="margin-top:10px">重設此裝置（清除本機設定）</button>
@@ -867,9 +612,7 @@ const state = {
   tab: 'home',
   data: { vitals: [], members: [], shifts: [], logs: [], io_records: [] },
   chartRange: '7',
-  weekOffset: 0,
   sync: 'local',       // local | ok | live | offline | syncing
-  editingShift: null,  // shift row 或 null（新增）
   editingMember: null,
   pickedColor: MEMBER_COLORS[0],
   realtime: false,     // 即時連線是否已建立
@@ -1370,8 +1113,7 @@ function renderMedsCard() {
   if (!medsLogs.length) { el.style.display = 'none'; return; }
   el.style.display = 'block';
   el.innerHTML = `
-    <h2>💊 最近用藥 <span class="spacer"></span>
-      <button class="link-btn" onclick="document.getElementById('btnAllLogs').click()">查看全部 ›</button></h2>
+    <h2>💊 最近用藥</h2>
     ${medsLogs.map(l => {
       const p = parseMedsLog(l.text);
       return `<div class="meds-item">
@@ -1387,48 +1129,11 @@ function renderMedsCard() {
 function memberByName(name) { return state.data.members.find(m => m.name === name); }
 function memberById(id) { return state.data.members.find(m => m.id === id); }
 
-function findDuty() {
-  const now = new Date();
-  const today = dateKey(now);
-  const nowHM = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  const shifts = state.data.shifts;
-  const current = shifts.find(s => s.date === today && hm(s.start_time) <= nowHM && nowHM < hm(s.end_time));
-  const next = shifts.find(s =>
-    (s.date === today && hm(s.start_time) > nowHM) || s.date > today);
-  return { current, next };
-}
-
 function latestMetric(key) {
   return state.data.vitals.find(v => v[key] != null && v[key] !== '');
 }
 
 function renderHome() {
-  // 值班卡
-  const { current, next } = findDuty();
-  const dutyEl = $('#dutyCard');
-  const cm = current && memberById(current.member_id);
-  const nm = next && memberById(next.member_id);
-  const nextTxt = next
-    ? `下一班：${nm ? esc(nm.name) : '未指定'}（${next.date === dateKey(new Date()) ? '今天' : esc(next.date.slice(5).replace('-','/'))} ${esc(hm(next.start_time))}–${esc(hm(next.end_time))}）`
-    : '下一班：尚未排班';
-  if (cm) {
-    dutyEl.innerHTML = `
-      <div class="duty-avatar" style="background:${esc(cm.color)}">${esc(cm.name.slice(0,1))}</div>
-      <div class="duty-main">
-        <div class="duty-label">目前值班</div>
-        <div class="duty-name">${esc(cm.name)} <small style="font-size:.85rem;color:var(--ink-2);font-weight:600">${esc(hm(current.start_time))}–${esc(hm(current.end_time))}</small></div>
-        <div class="duty-next">${nextTxt}</div>
-      </div>`;
-  } else {
-    dutyEl.innerHTML = `
-      <div class="duty-avatar" style="background:var(--teal-100);color:var(--teal-700)">？</div>
-      <div class="duty-main">
-        <div class="duty-label">目前值班</div>
-        <div class="duty-name" style="color:var(--ink-2)">目前無人值班</div>
-        <div class="duty-next">${nextTxt}</div>
-      </div>`;
-  }
-
   // 最新數值：圖示上加一個對應色的圓形底，異常時整塊轉紅維持既有強烈警示不變
   const tiles = [
     { key: 'temp', icon: '🌡️', color: '#fbdde6', text: '體溫', unit: '°C', check: abnTemp, fmt: v => (+v).toFixed(1) },
@@ -1475,11 +1180,6 @@ function renderHome() {
   $('#homeAlert').innerHTML = alerts.length
     ? `<div class="alert-banner"><span class="ai">⚠️</span><span>最新數值異常：${esc(alerts.join('、'))}。請留意病人狀況，必要時聯絡醫護。</span></div>`
     : '';
-
-  // 最近日誌
-  const logs = state.data.logs.slice(0, 3);
-  $('#homeLogs').innerHTML = logs.length ? logs.map(logItemHtml).join('')
-    : '<p style="color:var(--muted);font-size:.92rem">還沒有留言，寫下第一則交班備註吧。</p>';
 
   renderHeroBanner();
   renderMedsCard();
@@ -1617,17 +1317,6 @@ const urineInterval = () => {
   return Number.isFinite(v) && v >= 30 ? v : 120;
 };
 setInterval(() => { if (config && state.tab === 'home') renderHeroBanner(); }, 30000);
-
-function logItemHtml(l) {
-  const m = memberByName(l.author);
-  return `<div class="log-item">
-    <div class="log-dot" style="background:${m ? esc(m.color) : 'var(--teal-500)'}"></div>
-    <div style="flex:1;min-width:0">
-      <div class="log-meta"><span class="log-author">${esc(l.author || '家人')}</span> · ${esc(fmtDT(l.ts))}</div>
-      <div class="log-text">${esc(l.text)}</div>
-    </div>
-  </div>`;
-}
 
 /* ============ 紀錄頁 ============ */
 const numOrNull = s => {
@@ -1773,9 +1462,7 @@ function downloadCsv(filename, rows) {
 const RAW_EXPORT_TABLES = {
   vitals:     { file: '生命徵象', cols: ['id', 'ts', 'temp', 'sys', 'dia', 'spo2', 'hr', 'glucose', 'weight', 'recorder', 'note', 'family_code', 'created_at'] },
   io_records: { file: '飲水排泄', cols: ['id', 'ts', 'type', 'amount', 'detail', 'recorder', 'note', 'family_code', 'created_at'] },
-  logs:       { file: '交班日誌', cols: ['id', 'ts', 'author', 'text', 'family_code', 'created_at'] },
   members:    { file: '家人成員', cols: ['id', 'name', 'color', 'family_code', 'created_at'] },
-  shifts:     { file: '排班', cols: ['id', 'date', 'start_time', 'end_time', 'member_id', 'family_code', 'created_at'] },
 };
 $('#btnExportCsv').addEventListener('click', () => {
   const d = new Date(), stamp = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
@@ -1963,44 +1650,13 @@ function attachTooltip(wrap, def) {
   svg.addEventListener('pointerleave', () => tip.style.display = 'none');
 }
 
-/* ============ 排班頁 ============ */
-function weekStart(offset) {
-  const now = new Date();
-  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const dow = (d.getDay() + 6) % 7; // 週一為 0
-  d.setDate(d.getDate() - dow + offset * 7);
-  return d;
-}
-
-function renderSchedule() {
-  const ws = weekStart(state.weekOffset);
-  const we = new Date(ws); we.setDate(we.getDate() + 6);
-  $('#weekTitle').textContent =
-    `${ws.getMonth()+1}/${ws.getDate()} – ${we.getMonth()+1}/${we.getDate()}` +
-    (state.weekOffset === 0 ? '（本週）' : '');
-  const todayK = dateKey(new Date());
-  let html = '';
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(ws); d.setDate(d.getDate() + i);
-    const k = dateKey(d);
-    const shifts = state.data.shifts.filter(s => s.date === k);
-    html += `<div class="day-row${k === todayK ? ' today' : ''}">
-      <div class="day-date"><div class="dw">${WEEKDAYS[d.getDay()]}</div><div class="dd">${d.getDate()}</div></div>
-      <div class="day-shifts">
-        ${shifts.length ? shifts.map(s => {
-          const m = memberById(s.member_id);
-          return `<button class="shift-chip" style="background:${m ? esc(m.color) : '#8a9996'}" data-shift="${esc(s.id)}">
-            ${esc(m ? m.name : '（已移除）')}<span class="sc-time">${esc(hm(s.start_time))}–${esc(hm(s.end_time))}</span>
-          </button>`;
-        }).join('') : '<div class="day-empty">尚未排班</div>'}
-      </div>
-      <button class="day-add" data-add-shift="${k}" aria-label="新增班次">＋</button>
-    </div>`;
-  }
-  $('#weekList').innerHTML = html;
-
-  $('#memberCount').textContent = state.data.members.length ? `${state.data.members.length} 位` : '';
-  $('#memberList').innerHTML = state.data.members.length ? state.data.members.map(m =>
+/* ============ 家人管理 ============ */
+function renderMemberList() {
+  const countEl = $('#memberCount');
+  const listEl = $('#memberList');
+  if (!listEl) return;
+  if (countEl) countEl.textContent = state.data.members.length ? `${state.data.members.length} 位` : '';
+  listEl.innerHTML = state.data.members.length ? state.data.members.map(m =>
     `<div class="member-row">
       <div class="member-dot" style="background:${esc(m.color)}"></div>
       <div class="member-name">${esc(m.name)}</div>
@@ -2009,76 +1665,10 @@ function renderSchedule() {
     : '<p style="color:var(--muted);font-size:.92rem">尚未新增家人，點右上「＋ 新增」。</p>';
 }
 
-$('#btnPrevWeek').addEventListener('click', () => { state.weekOffset--; renderSchedule(); });
-$('#btnNextWeek').addEventListener('click', () => { state.weekOffset++; renderSchedule(); });
-$('#btnThisWeek').addEventListener('click', () => { state.weekOffset = 0; renderSchedule(); });
-
-$('#weekList').addEventListener('click', e => {
-  const addDate = e.target.closest('[data-add-shift]')?.dataset.addShift;
-  const shiftId = e.target.closest('[data-shift]')?.dataset.shift;
-  if (addDate) openShiftModal(null, addDate);
-  else if (shiftId) {
-    const s = state.data.shifts.find(x => x.id === shiftId);
-    if (s) openShiftModal(s);
-  }
-});
-
-function openShiftModal(shift, date) {
-  if (!state.data.members.length) { toast('請先在下方新增家人成員'); return; }
-  state.editingShift = shift;
-  $('#shiftModalTitle').childNodes[0].textContent = shift ? '編輯班次' : '新增班次';
-  $('#sfDate').value = shift ? shift.date : date;
-  $('#sfStart').value = shift ? hm(shift.start_time) : '08:00';
-  $('#sfEnd').value = shift ? hm(shift.end_time) : '16:00';
-  $('#sfMember').innerHTML = state.data.members.map(m =>
-    `<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('');
-  if (shift) $('#sfMember').value = shift.member_id;
-  else {
-    const me = memberByName(lsGet('takecare_me', ''));
-    if (me) $('#sfMember').value = me.id;
-  }
-  $('#btnDeleteShift').style.display = shift ? 'flex' : 'none';
-  syncQuickTimes();
-  $('#shiftModal').classList.add('show');
-}
-function syncQuickTimes() {
-  $$('#quickTimes button').forEach(b =>
-    b.classList.toggle('active', b.dataset.s === $('#sfStart').value && b.dataset.e === $('#sfEnd').value));
-}
-$('#quickTimes').addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return;
-  $('#sfStart').value = b.dataset.s; $('#sfEnd').value = b.dataset.e;
-  syncQuickTimes();
-});
-$('#sfStart').addEventListener('input', syncQuickTimes);
-$('#sfEnd').addEventListener('input', syncQuickTimes);
-
-$('#btnSaveShift').addEventListener('click', async () => {
-  const row = {
-    date: $('#sfDate').value,
-    start_time: $('#sfStart').value,
-    end_time: $('#sfEnd').value,
-    member_id: $('#sfMember').value,
-  };
-  if (!row.date || !row.start_time || !row.end_time || !row.member_id) { toast('請完整填寫班次資訊'); return; }
-  if (row.end_time <= row.start_time) { toast('結束時間需晚於開始時間'); return; }
-  const editing = state.editingShift;
-  const ok = await mutate(() =>
-    editing ? DB.update('shifts', editing.id, row) : DB.insert('shifts', row),
-    '✅ 已儲存班次');
-  if (ok) $('#shiftModal').classList.remove('show');
-});
-$('#btnDeleteShift').addEventListener('click', async () => {
-  if (!state.editingShift || !confirm('確定刪除這個班次？')) return;
-  const ok = await mutate(() => DB.remove('shifts', state.editingShift.id), '已刪除班次');
-  if (ok) $('#shiftModal').classList.remove('show');
-});
-
-/* ---- 家人管理 ---- */
-$('#btnAddMember').addEventListener('click', () => openMemberModal(null));
-$('#memberList').addEventListener('click', e => {
-  const id = e.target.dataset?.editMember;
-  if (id) openMemberModal(state.data.members.find(m => m.id === id));
+document.addEventListener('click', e => {
+  if (e.target.closest('#btnAddMember')) openMemberModal(null);
+  const editId = e.target.closest('[data-edit-member]')?.dataset.editMember;
+  if (editId) openMemberModal(state.data.members.find(m => m.id === editId));
 });
 function openMemberModal(member) {
   state.editingMember = member;
@@ -2110,79 +1700,22 @@ $('#btnSaveMember').addEventListener('click', async () => {
 });
 $('#btnDeleteMember').addEventListener('click', async () => {
   const m = state.editingMember;
-  if (!m || !confirm(`確定刪除「${m.name}」？其排班也會一併刪除。`)) return;
-  const ok = await mutate(async () => {
-    const theirShifts = state.data.shifts.filter(s => s.member_id === m.id);
-    for (const s of theirShifts) await DB.remove('shifts', s.id);
-    await DB.remove('members', m.id);
-  }, '已刪除');
+  if (!m || !confirm(`確定刪除「${m.name}」？`)) return;
+  const ok = await mutate(() => DB.remove('members', m.id), '已刪除');
   if (ok) $('#memberModal').classList.remove('show');
 });
 
-/* ============ 日誌 ============ */
-function openLogs() {
-  renderLogTimeline();
-  $('#logPage').classList.add('show');
-  $('#logTimeline').scrollTop = 0;
-}
 $('#vitalsUpdated').addEventListener('click', e => {
   if (e.target.closest('#btnRefreshVitals')) refreshAll(true);
 });
-$('#btnAllLogs').addEventListener('click', openLogs);
-$('#btnWriteLog').addEventListener('click', () => { openLogs(); $('#logInput').focus(); });
-$('#btnCloseLogs').addEventListener('click', () => $('#logPage').classList.remove('show'));
 
-function renderLogTimeline() {
-  const groups = {};
-  for (const l of state.data.logs) {
-    const d = new Date(l.ts);
-    const k = dateKey(d);
-    (groups[k] = groups[k] || []).push(l);
-  }
-  const keys = Object.keys(groups).sort().reverse();
-  $('#logTimeline').innerHTML = keys.length ? keys.map(k => {
-    const d = new Date(k + 'T12:00');
-    return `<div class="tl-date">${fmtDateZh(d)}</div>` + groups[k].map(l => {
-      const m = memberByName(l.author);
-      return `<div class="tl-item">
-        <div class="log-dot" style="background:${m ? esc(m.color) : 'var(--teal-500)'}"></div>
-        <div style="flex:1;min-width:0">
-          <div class="log-meta"><span class="log-author">${esc(l.author || '家人')}</span> · ${esc(fmtTimeOnly(l.ts))}</div>
-          <div class="log-text">${esc(l.text)}</div>
-        </div>
-      </div>`;
-    }).join('');
-  }).join('') : '<p style="color:var(--muted);text-align:center;padding:30px 0">還沒有留言，寫下第一則交班備註吧。</p>';
-}
-
-$('#btnSendLog').addEventListener('click', async () => {
-  const text = $('#logInput').value.trim();
-  if (!text) return;
-  await requireIdentity();
-  const author = lsGet('takecare_me', '') || '家人';
-  const ok = await mutate(() => DB.insert('logs', { ts: new Date().toISOString(), author, text }), '✅ 已送出留言');
-  if (ok) { $('#logInput').value = ''; renderLogTimeline(); }
-});
-$('#logInput').addEventListener('input', function () {
-  this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 110) + 'px';
-});
-
-/* ============ 病房照護指南 ============ */
-$('#btnOpenGuide').addEventListener('click', () => {
-  $('#guidePage').classList.add('show');
-  $('#guideBody').scrollTop = 0;
-});
-$('#btnCloseGuide').addEventListener('click', () => $('#guidePage').classList.remove('show'));
-
-/* 指南／置頂卡內的快捷按鈕：data-jump="tab:xxx" | "quick:xxx" | "log" | "settings" */
+/* 置頂卡內的快捷按鈕：data-jump="settings" 開啟設定 */
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-jump]');
   if (!b) return;
-  $('#guidePage').classList.remove('show');
   const [kind, val] = b.dataset.jump.split(':');
   if (kind === 'tab') switchTab(val);
   else if (kind === 'quick') openQuickModal(val);
-  else if (kind === 'log') { openLogs(); setTimeout(() => $('#logInput').focus(), 250); }
   else if (kind === 'settings') $('#btnSettings').click();
 });
 
@@ -2230,9 +1763,7 @@ const chipValue = id => $(`#${id} .chip.active`)?.dataset.v ?? null;
 
 $('#quickGrid').addEventListener('click', e => {
   const btn = e.target.closest('[data-quick]'); if (!btn) return;
-  const type = btn.dataset.quick;
-  if (type === 'log') { openLogs(); setTimeout(() => $('#logInput').focus(), 250); return; }
-  openQuickModal(type);
+  openQuickModal(btn.dataset.quick);
 });
 
 /* 發燒 SOP：體溫 ≥38 時展開，需確認退燒藥與通知護士 */
@@ -2689,9 +2220,8 @@ function renderAll() {
   applyTitle();
   renderHome();
   renderRecords();
-  renderSchedule();
+  renderMemberList();
   if (state.tab === 'charts') renderCharts();
-  if ($('#logPage').classList.contains('show')) renderLogTimeline();
 }
 function applyTitle() {
   $('#appTitle').textContent = (config && config.patient) ? `${config.patient} 的照護紀錄` : '家庭照護紀錄';
