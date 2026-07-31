@@ -2050,6 +2050,7 @@ function renderLogTimeline() {
 $('#btnSendLog').addEventListener('click', async () => {
   const text = $('#logInput').value.trim();
   if (!text) return;
+  await requireIdentity();
   const author = lsGet('takecare_me', '') || '家人';
   const ok = await mutate(() => DB.insert('logs', { ts: new Date().toISOString(), author, text }), '✅ 已送出留言');
   if (ok) { $('#logInput').value = ''; renderLogTimeline(); }
@@ -2139,7 +2140,8 @@ function updateSop() {
   }
 }
 
-function openQuickModal(type) {
+async function openQuickModal(type) {
+  await requireIdentity();
   quickType = type;
   const def = QUICK_DEFS[type];
   qWheels = {}; qEnabled = {};
@@ -2366,6 +2368,7 @@ $('#btnSavePinned').addEventListener('click', async () => {
   const current = latestPinnedLog();
   const cur = current ? parsePinnedLog(current.text) : { contact: '', wish: '' };
   if (cur.contact === contact && cur.wish === wish) { toast('內容未變更'); return; }
+  await requireIdentity();
   const lines = [PIN_PREFIX];
   if (contact) lines.push(`聯絡人：${contact}`);
   if (wish) lines.push(`醫療意願：${wish}`);
@@ -2519,12 +2522,20 @@ function openWhoAmI() {
   $('#whoAmIInput').value = '';
   $('#whoAmIModal').classList.add('show');
 }
+let whoAmIResolver = null;
 async function confirmWhoAmI(name) {
   lsSet('takecare_me', name);
   $('#whoAmIModal').classList.remove('show');
   const added = await ensureSelfMember();
   if (added) await refreshAll(); else renderAll();
   toast(`👋 歡迎，${name}！`);
+  if (whoAmIResolver) { const r = whoAmIResolver; whoAmIResolver = null; r(name); }
+}
+/* 記錄動作前先確認身分：已知名字直接放行；未知就打開 whoAmI 選單，選完再繼續。 */
+function requireIdentity() {
+  const me = lsGet('takecare_me', '');
+  if (me) return Promise.resolve(me);
+  return new Promise(resolve => { whoAmIResolver = resolve; openWhoAmI(); });
 }
 $('#whoAmIChips').addEventListener('click', e => {
   const b = e.target.closest('.chip'); if (!b) return;
@@ -2651,17 +2662,14 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('online', () => { if (config) { rtConnect(); refreshAll(true); } });
 
-/* 進入點 */
+/* 進入點：預設直接連上共用資料庫，訪客不用填任何東西就能看資料，
+   等真的要記錄（生命徵象、進出量、留言）時再問「你是誰」。 */
 tryJoinLink();
-if (config) startApp();
-else {
-  $('#suUrl').value = DEFAULT_CLOUD.url;
-  $('#suKey').value = DEFAULT_CLOUD.key;
-  $('#suFamily').value = DEFAULT_CLOUD.family;
-  $('#setupScreen').classList.add('show');
-  loadSetupMembers();
-  setTimeout(() => $('#suMe').focus(), 300);
+if (!config) {
+  config = { mode: 'cloud', url: DEFAULT_CLOUD.url, key: DEFAULT_CLOUD.key, family: DEFAULT_CLOUD.family, patient: '' };
+  lsSet('takecare_config', config);
 }
+startApp();
 </script>
 </body>
 </html>
