@@ -490,15 +490,13 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
             <div class="qcat-label">🩺 生命徵象</div>
             <div class="quick-grid">
               <button class="quick-tile" data-quick="vitals"><span class="qt-icon">🩺</span>生命徵象<span class="qt-plus">＋</span></button>
-              <button class="quick-tile" data-quick="temp"><span class="qt-icon">🌡️</span>只量體溫<span class="qt-plus">＋</span></button>
-              <button class="quick-tile" data-quick="glucose"><span class="qt-icon">🩸</span>血糖<span class="qt-plus">＋</span></button>
               <button class="quick-tile" data-quick="weight"><span class="qt-icon">⚖️</span>體重<span class="qt-plus">＋</span></button>
+              <button class="quick-tile" data-quick="meds"><span class="qt-icon">💊</span>記錄用藥<span class="qt-plus">＋</span></button>
             </div>
           </div>
           <div class="qcat qcat-meds">
             <div class="qcat-label">💊 用藥與其他</div>
             <div class="quick-grid">
-              <button class="quick-tile" data-quick="meds"><span class="qt-icon">💊</span>記錄用藥<span class="qt-plus">＋</span></button>
               <button class="quick-tile" data-quick="log"><span class="qt-icon">📝</span>交班留言<span class="qt-plus">＋</span></button>
             </div>
           </div>
@@ -2200,9 +2198,7 @@ const VITAL_METRICS = {
   weight: { name: '體重', wlabel: '體重 kg', min: 20, max: 150, step: .1, def: 60, fmt: v => v.toFixed(1), check: () => null },
 };
 const QUICK_DEFS = {
-  vitals: { title: '🩺 記錄生命徵象', kind: 'vitals', metrics: ['temp', 'bp', 'spo2', 'hr'], toastLabel: '生命徵象' },
-  temp:   { title: '🌡️ 記錄體溫', kind: 'vitals', metrics: ['temp'], toastLabel: '體溫' },
-  glucose:{ title: '🩸 記錄血糖', kind: 'vitals', metrics: ['glucose'], tagChips: ['空腹', '飯前', '飯後', '睡前'], toastLabel: '血糖' },
+  vitals: { title: '🩺 記錄生命徵象', kind: 'vitals', metrics: ['temp', 'bp', 'spo2', 'hr', 'glucose'], tagChips: ['空腹', '飯前', '飯後', '睡前'], toastLabel: '生命徵象' },
   weight: { title: '⚖️ 記錄體重', kind: 'vitals', metrics: ['weight'], toastLabel: '體重' },
   water:  { title: '💧 記錄喝水/飲品', kind: 'io', ioType: 'water', amountLabel: '水量', chips: [100, 150, 200, 250, 300, 500], typeChips: ['水', '湯', '牛奶', '其他'], toastLabel: '喝水' },
   food:   { title: '🍚 記錄吃東西', kind: 'io', ioType: 'food', typeOnly: ['全部吃完', '吃大半', '吃一半', '吃一點', '沒吃'], toastLabel: '吃東西' },
