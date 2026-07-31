@@ -16,6 +16,7 @@ create table if not exists public.vitals (
   spo2 integer,          -- 血氧 %
   hr integer,            -- 心率
   glucose integer,       -- 血糖 mg/dL
+  weight numeric,        -- 體重 kg
   recorder text,         -- 記錄者
   note text,             -- 備註
   created_at timestamptz not null default now()
@@ -56,7 +57,7 @@ create table if not exists public.io_records (
   id uuid primary key default gen_random_uuid(),
   family_code text not null,
   ts timestamptz not null default now(),
-  type text not null check (type in ('water', 'urine', 'stool')),
+  type text not null check (type in ('water', 'urine', 'stool', 'food', 'iv', 'vomit')),
   amount integer,        -- cc（喝水/小便適用，大便可留空）
   detail text,           -- 飲品種類 或 大便性質
   recorder text,
@@ -64,8 +65,12 @@ create table if not exists public.io_records (
   created_at timestamptz not null default now()
 );
 
--- 既有資料庫升級用：舊版建立的 vitals 資料表補上血糖欄位（重複執行無害）
+-- 既有資料庫升級用：舊版建立的資料表補上新欄位/新類型（重複執行無害）
 alter table public.vitals add column if not exists glucose integer;
+alter table public.vitals add column if not exists weight numeric;
+alter table public.io_records drop constraint if exists io_records_type_check;
+alter table public.io_records add constraint io_records_type_check
+  check (type in ('water', 'urine', 'stool', 'food', 'iv', 'vomit'));
 
 create index if not exists vitals_family_ts_idx on public.vitals (family_code, ts desc);
 create index if not exists members_family_idx on public.members (family_code);

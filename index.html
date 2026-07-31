@@ -108,24 +108,57 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
   background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
   padding:14px 14px 12px;
 }
-.vital-tile .vt-label{font-size:.85rem;color:var(--ink-2);font-weight:600;display:flex;align-items:center;gap:6px}
+.vital-tile .vt-label{font-size:.85rem;color:var(--ink-2);font-weight:600;display:flex;align-items:center;gap:7px}
+.vital-tile .vt-icon{
+  width:22px;height:22px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;background:var(--teal-50);
+}
 .vital-tile .vt-value{font-size:2.05rem;font-weight:800;letter-spacing:-.5px;margin-top:2px;line-height:1.2}
 .vital-tile .vt-value small{font-size:.95rem;font-weight:600;color:var(--ink-2);letter-spacing:0}
 .vital-tile .vt-time{font-size:.76rem;color:var(--muted);margin-top:2px}
 .vital-tile.abn .vt-value{color:var(--danger)}
 .vital-tile .vt-warn{font-size:.8rem;color:var(--danger);font-weight:700}
+.vitals-updated{font-size:.78rem;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:4px;margin:0 2px 8px}
+.vitals-updated button{font-size:.95rem;line-height:1;color:var(--teal-600);padding:2px}
 
-/* quick-record grid */
+/* quick-record grid：四個分類各自帶淡色底卡，呼應參考設計的分類色 */
+.qcat{border-radius:14px;padding:12px 10px;margin-bottom:10px}
+.qcat:last-child{margin-bottom:0}
+.qcat-label{font-size:.85rem;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.qcat-vitals{background:#fdeef1}
+.qcat-vitals .qcat-label{color:#b23a5c}
+.qcat-in{background:#eaf2fd}
+.qcat-in .qcat-label{color:#1d5fa8}
+.qcat-out{background:#e9f7ee}
+.qcat-out .qcat-label{color:#1f7a44}
+.qcat-other{background:var(--teal-50)}
+.qcat-other .qcat-label{color:var(--teal-700)}
 .quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
 .quick-tile{
-  background:var(--teal-50);border-radius:14px;padding:13px 4px 10px;
+  position:relative;background:rgba(255,255,255,.72);border-radius:14px;padding:13px 4px 26px;
   display:flex;flex-direction:column;align-items:center;gap:4px;
-  font-weight:700;font-size:.8rem;color:var(--teal-700);
+  font-weight:700;font-size:.8rem;color:var(--ink);
 }
-.quick-tile:active{background:var(--teal-100)}
-.quick-tile .qt-icon{font-size:1.7rem;line-height:1}
+.quick-tile:active{background:#fff}
+.quick-tile .qt-icon{font-size:1.85rem;line-height:1}
+.quick-tile .qt-plus{
+  position:absolute;left:50%;bottom:6px;transform:translateX(-50%);
+  width:18px;height:18px;border-radius:50%;background:var(--teal-600);color:#fff;
+  font-size:.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;line-height:1;
+}
+.qcat-vitals .qt-plus{background:#c94b71}
+.qcat-in .qt-plus{background:#2a78d6}
+.qcat-out .qt-plus{background:#1f9e56}
 
-/* io summary */
+/* 今日總覽：橫向捲動，涵蓋全部輸入/輸出類型 */
+.today-strip{display:flex;gap:10px;overflow-x:auto;padding-bottom:2px;margin:0 -2px;-webkit-overflow-scrolling:touch}
+.today-item{flex:none;min-width:74px;text-align:center;background:var(--teal-50);border-radius:12px;padding:9px 6px}
+.today-item .ti-icon{font-size:1.25rem;line-height:1}
+.today-item .ti-num{font-size:1.05rem;font-weight:800;color:var(--ink);margin-top:2px}
+.today-item .ti-amt{font-size:.72rem;color:var(--ink-2);font-weight:600}
+.today-item .ti-label{font-size:.72rem;color:var(--ink-2);margin-top:1px}
+
+/* io summary（已由 .today-strip 取代，樣式保留供其他頁面沿用既有結構） */
 .io-stats{display:flex;justify-content:space-between;gap:6px;text-align:center}
 .io-stat{flex:1}
 .io-stat .io-num{font-size:1.4rem;font-weight:800;color:var(--ink)}
@@ -404,30 +437,43 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
       <div class="card">
         <h2>⚡ 快速記錄</h2>
         <div id="quickGrid">
-          <label class="qlabel">🩺 生命徵象</label>
-          <div class="quick-grid">
-            <button class="quick-tile" data-quick="vitals"><span class="qt-icon">🩺</span>生命徵象</button>
-            <button class="quick-tile" data-quick="temp"><span class="qt-icon">🌡️</span>只量體溫</button>
-            <button class="quick-tile" data-quick="glucose"><span class="qt-icon">🩸</span>血糖</button>
+          <div class="qcat qcat-vitals">
+            <div class="qcat-label">🩺 生命徵象</div>
+            <div class="quick-grid">
+              <button class="quick-tile" data-quick="vitals"><span class="qt-icon">🩺</span>生命徵象<span class="qt-plus">＋</span></button>
+              <button class="quick-tile" data-quick="temp"><span class="qt-icon">🌡️</span>只量體溫<span class="qt-plus">＋</span></button>
+              <button class="quick-tile" data-quick="glucose"><span class="qt-icon">🩸</span>血糖<span class="qt-plus">＋</span></button>
+              <button class="quick-tile" data-quick="weight"><span class="qt-icon">⚖️</span>體重<span class="qt-plus">＋</span></button>
+            </div>
           </div>
-          <label class="qlabel" style="margin-top:14px">⬇️ 輸入</label>
-          <div class="quick-grid">
-            <button class="quick-tile" data-quick="water"><span class="qt-icon">💧</span>喝水/飲品</button>
+          <div class="qcat qcat-in">
+            <div class="qcat-label">⬇️ 輸入</div>
+            <div class="quick-grid">
+              <button class="quick-tile" data-quick="water"><span class="qt-icon">💧</span>喝水/飲品<span class="qt-plus">＋</span></button>
+              <button class="quick-tile" data-quick="food"><span class="qt-icon">🍚</span>吃東西<span class="qt-plus">＋</span></button>
+              <button class="quick-tile" data-quick="iv"><span class="qt-icon">💉</span>打點滴<span class="qt-plus">＋</span></button>
+            </div>
           </div>
-          <label class="qlabel" style="margin-top:14px">⬆️ 輸出</label>
-          <div class="quick-grid">
-            <button class="quick-tile" data-quick="urine"><span class="qt-icon">🚽</span>小便</button>
-            <button class="quick-tile" data-quick="stool"><span class="qt-icon">💩</span>大便</button>
+          <div class="qcat qcat-out">
+            <div class="qcat-label">⬆️ 輸出</div>
+            <div class="quick-grid">
+              <button class="quick-tile" data-quick="urine"><span class="qt-icon">🚽</span>小便<span class="qt-plus">＋</span></button>
+              <button class="quick-tile" data-quick="stool"><span class="qt-icon">💩</span>大便<span class="qt-plus">＋</span></button>
+              <button class="quick-tile" data-quick="vomit"><span class="qt-icon">🤢</span>嘔吐<span class="qt-plus">＋</span></button>
+            </div>
           </div>
-          <label class="qlabel" style="margin-top:14px">📋 其他</label>
-          <div class="quick-grid">
-            <button class="quick-tile" data-quick="log"><span class="qt-icon">📝</span>交班留言</button>
+          <div class="qcat qcat-other">
+            <div class="qcat-label">📋 其他</div>
+            <div class="quick-grid">
+              <button class="quick-tile" data-quick="log"><span class="qt-icon">📝</span>交班留言<span class="qt-plus">＋</span></button>
+            </div>
           </div>
         </div>
       </div>
       <div class="card" id="familyCard"></div>
       <div class="card" id="urineTimerCard"></div>
       <div class="card duty-card" id="dutyCard"></div>
+      <div class="vitals-updated" id="vitalsUpdated"></div>
       <div class="vitals-grid" id="vitalsGrid" style="margin-bottom:14px"></div>
       <div class="card" id="ioSummaryCard"></div>
       <div class="card">
@@ -867,7 +913,13 @@ async function flushQueue() {
     while (q.length) {
       const op = q[0];
       try {
-        if (op.op === 'insert') await sbFetch(op.table, { method: 'POST', body: { ...op.row, family_code: config.family } });
+        if (op.op === 'insert') {
+          // 走跟即時寫入相同的欄位/類型相容退回邏輯，避免資料庫還沒升級時
+          // 離線佇列重送必定失敗、重試 3 次後被判定放棄而弄丟這筆紀錄
+          if (op.table === 'vitals') await sbInsertVital(op.row);
+          else if (op.table === 'io_records') await sbInsertIo(op.row);
+          else await sbFetch(op.table, { method: 'POST', body: { ...op.row, family_code: config.family } });
+        }
         else if (op.op === 'update') await sbFetch(op.table, { method: 'PATCH', query: `id=eq.${op.id}&${famQ()}`, body: op.patch });
         else if (op.op === 'remove') await sbFetch(op.table, { method: 'DELETE', query: `id=eq.${op.id}&${famQ()}` });
         q.shift(); changed = true;
@@ -950,31 +1002,104 @@ const DB = {
   },
 };
 
-/* ---- 血糖欄位相容層 ----
-   雲端資料庫尚未新增 glucose 欄位時，血糖改存在備註中（【血糖】數值），
-   讀取時解析回 glucose 欄位並還原備註。之後補上欄位也不影響舊資料判讀。 */
-const GLU_NOTE_RE = /【血糖】(\d+(?:\.\d+)?)/;
+/* ---- 生命徵象欄位相容層 ----
+   雲端資料庫尚未新增 glucose／weight 欄位時，改存進備註（【血糖】/【體重】數值），
+   讀取時解析回正式欄位並還原備註。之後補上欄位也不影響舊資料判讀。
+   sbInsertVital 是不經過離線佇列的「原始」寫入（給 flushQueue 重送時複用同一套
+   欄位退回邏輯，而不是繞過它直接打一個一定會再失敗的請求）。 */
+const VITAL_NOTE_FIELDS = [
+  { key: 'glucose', re: /【血糖】(\d+(?:\.\d+)?)/, label: '血糖' },
+  { key: 'weight', re: /【體重】(\d+(?:\.\d+)?)/, label: '體重' },
+];
 
-async function insertVitalWithFallback(row) {
-  try { return await DB.insert('vitals', row); }
-  catch (e) {
-    if (row.glucose != null && /glucose/i.test(String(e.message))) {
-      const { glucose, ...rest } = row;
-      rest.note = `【血糖】${glucose}` + (rest.note ? '；' + rest.note : '');
-      return DB.insert('vitals', rest);
+async function sbInsertVital(row) {
+  try {
+    const rows = await sbFetch('vitals', { method: 'POST', body: { ...row, family_code: config.family } });
+    return rows[0];
+  } catch (e) {
+    for (const f of VITAL_NOTE_FIELDS) {
+      if (row[f.key] != null && new RegExp(f.key, 'i').test(String(e.message))) {
+        const { [f.key]: val, ...rest } = row;
+        rest.note = `【${f.label}】${val}` + (rest.note ? '；' + rest.note : '');
+        const rows = await sbFetch('vitals', { method: 'POST', body: { ...rest, family_code: config.family } });
+        return rows[0];
+      }
     }
     throw e;
   }
 }
 
+/* 供快速記錄 UI 呼叫：結合「欄位相容退回」與「離線佇列」兩層保護 */
+async function insertVitalWithFallback(row) {
+  if (!isCloud()) return DB.insert('vitals', row);
+  try { return await sbInsertVital(row); }
+  catch (e) {
+    if (!isNetworkError(e)) throw e;
+    const tmpId = uuid();
+    enqueue({ op: 'insert', table: 'vitals', row, tmpId });
+    return { ...row, id: tmpId, created_at: new Date().toISOString(), _pending: true };
+  }
+}
+
 function normalizeVitals(rows) {
   for (const v of rows) {
-    if (v.glucose == null && v.note) {
-      const m = String(v.note).match(GLU_NOTE_RE);
+    if (!v.note) continue;
+    for (const f of VITAL_NOTE_FIELDS) {
+      if (v[f.key] != null) continue;
+      const m = String(v.note).match(f.re);
       if (m) {
-        v.glucose = +m[1];
-        v.note = String(v.note).replace(GLU_NOTE_RE, '')
-          .replace(/；；/g, '；').replace(/^；|；$/g, '');
+        v[f.key] = +m[1];
+        v.note = String(v.note).replace(f.re, '').replace(/；；/g, '；').replace(/^；|；$/g, '');
+      }
+    }
+  }
+}
+
+/* ---- 出入量新類型相容層 ----
+   吃東西／打點滴／嘔吐是新的 io_records.type 值，資料庫還沒放寬 CHECK 限制前，
+   改用允許的別名 type（同屬輸入/輸出，即使解析失效也只會歸錯到同一大類，不會算錯邊）
+   ＋ detail 前綴標記存入，讀取時解析回真正類型。 */
+const IO_ALIAS = {
+  food:  { type: 'water', mark: '『食』' },
+  iv:    { type: 'water', mark: '『滴』' },
+  vomit: { type: 'stool', mark: '『吐』' },
+};
+const IO_UNMARK = Object.fromEntries(Object.entries(IO_ALIAS).map(([t, a]) => [a.mark, t]));
+
+async function sbInsertIo(row) {
+  try {
+    const rows = await sbFetch('io_records', { method: 'POST', body: { ...row, family_code: config.family } });
+    return rows[0];
+  } catch (e) {
+    const alias = IO_ALIAS[row.type];
+    if (alias) {
+      const rows = await sbFetch('io_records', { method: 'POST', body: {
+        ...row, family_code: config.family, type: alias.type, detail: alias.mark + (row.detail || ''),
+      } });
+      return rows[0];
+    }
+    throw e;
+  }
+}
+
+async function insertIoWithFallback(row) {
+  if (!isCloud()) return DB.insert('io_records', row);
+  try { return await sbInsertIo(row); }
+  catch (e) {
+    if (!isNetworkError(e)) throw e;
+    const tmpId = uuid();
+    enqueue({ op: 'insert', table: 'io_records', row, tmpId });
+    return { ...row, id: tmpId, created_at: new Date().toISOString(), _pending: true };
+  }
+}
+
+function normalizeIoRecords(rows) {
+  for (const r of rows) {
+    for (const [mark, trueType] of Object.entries(IO_UNMARK)) {
+      if (String(r.detail || '').startsWith(mark)) {
+        r.type = trueType;
+        r.detail = r.detail.slice(mark.length) || null;
+        break;
       }
     }
   }
@@ -1008,6 +1133,7 @@ async function doRefresh(showStatus) {
     ['vitals', 'members', 'shifts', 'logs', 'io_records'].map(t => DB.list(t)));
   state.data = { vitals, members, shifts, logs, io_records };
   normalizeVitals(state.data.vitals);
+  normalizeIoRecords(state.data.io_records);
   // 客戶端統一排序，本機/快取資料也一致
   const byTsDesc = (a, b) => (new Date(b.ts) - new Date(a.ts)) || (new Date(b.created_at || 0) - new Date(a.created_at || 0));
   state.data.vitals.sort(byTsDesc);
@@ -1205,15 +1331,17 @@ function renderHome() {
       </div>`;
   }
 
-  // 最新數值 2×2
+  // 最新數值：圖示上加一個對應色的圓形底，異常時整塊轉紅維持既有強烈警示不變
   const tiles = [
-    { key: 'temp', label: '🌡️ 體溫', unit: '°C', check: abnTemp, fmt: v => (+v).toFixed(1) },
-    { key: 'bp',   label: '🫀 血壓 <small style="font-weight:600;color:var(--muted)">mmHg</small>', unit: 'mmHg' },
-    { key: 'spo2', label: '💨 血氧', unit: '%', check: abnSpo2 },
-    { key: 'hr',   label: '💓 心率', unit: '次/分', check: abnHr },
-    { key: 'glucose', label: '🩸 血糖', unit: 'mg/dL', check: abnGlucose },
+    { key: 'temp', icon: '🌡️', color: '#fbdde6', text: '體溫', unit: '°C', check: abnTemp, fmt: v => (+v).toFixed(1) },
+    { key: 'bp',   icon: '🫀', color: '#fbe6d4', text: '血壓 <small style="font-weight:600;color:var(--muted)">mmHg</small>', unit: 'mmHg' },
+    { key: 'spo2', icon: '💨', color: '#dbeafd', text: '血氧', unit: '%', check: abnSpo2 },
+    { key: 'hr',   icon: '💓', color: '#fbdcdc', text: '心率', unit: '次/分', check: abnHr },
+    { key: 'glucose', icon: '🩸', color: '#ece0fa', text: '血糖', unit: 'mg/dL', check: abnGlucose },
+    { key: 'weight', icon: '⚖️', color: '#e5e9ea', text: '體重', unit: 'kg', fmt: v => (+v).toFixed(1) },
   ];
   const alerts = [];
+  let latestTs = null;
   $('#vitalsGrid').innerHTML = tiles.map(t => {
     let rec, valHtml = '<span style="color:var(--muted);font-size:1.3rem">－</span>', warn = '', abn = false, timeTxt = '';
     if (t.key === 'bp') {
@@ -1234,13 +1362,16 @@ function renderHome() {
         timeTxt = fmtDT(rec.ts);
       }
     }
+    if (rec && (!latestTs || new Date(rec.ts) > new Date(latestTs))) latestTs = rec.ts;
     return `<div class="vital-tile${abn ? ' abn' : ''}">
-      <div class="vt-label">${t.label}</div>
+      <div class="vt-label"><span class="vt-icon" style="background:${t.color}">${t.icon}</span>${t.text}</div>
       <div class="vt-value">${valHtml}</div>
       ${warn ? `<div class="vt-warn">⚠ ${esc(warn)}</div>` : ''}
       <div class="vt-time">${timeTxt ? esc(timeTxt) : '尚無紀錄'}</div>
     </div>`;
   }).join('');
+  $('#vitalsUpdated').innerHTML = `${latestTs ? esc(fmtAgo(latestTs, '更新')) : '尚無生命徵象紀錄'}
+    <button id="btnRefreshVitals" aria-label="重新整理" title="重新整理">↻</button>`;
 
   // 警示橫幅
   $('#homeAlert').innerHTML = alerts.length
@@ -1268,13 +1399,13 @@ function lastActivityOf(name) {
   for (const l of state.data.logs) if (l.author === name) { consider(l.ts); break; }
   return latest;
 }
-function fmtAgo(ts) {
+function fmtAgo(ts, verb = '記錄') {
   const mins = Math.floor((Date.now() - new Date(ts)) / 60000);
-  if (mins < 1) return '剛剛記錄';
-  if (mins < 60) return `${mins} 分鐘前記錄`;
-  if (mins < 60 * 24) return `${Math.floor(mins / 60)} 小時前記錄`;
+  if (mins < 1) return '剛剛' + verb;
+  if (mins < 60) return `${mins} 分鐘前${verb}`;
+  if (mins < 60 * 24) return `${Math.floor(mins / 60)} 小時前${verb}`;
   const days = Math.floor(mins / 1440);
-  return days <= 30 ? `${days} 天前記錄` : `${fmtDT(ts)} 記錄`;
+  return days <= 30 ? `${days} 天前${verb}` : `${fmtDT(ts)} ${verb}`;
 }
 function renderFamilyCard() {
   const el = $('#familyCard');
@@ -1325,22 +1456,33 @@ function renderPinnedInfo() {
 /* 大便紀錄若勾了「有小便」，也算一次小便事件（會重置倒數） */
 const isUrineEvent = r => r.type === 'urine' || (r.type === 'stool' && String(r.detail || '').includes('有小便'));
 
-/* 今日出入量摘要 */
+/* 今日總覽：橫向捲動，涵蓋全部輸入/輸出類型 */
 function renderIoSummary() {
   const todayK = dateKey(new Date());
   const todays = state.data.io_records.filter(r => dateKey(new Date(r.ts)) === todayK);
-  const water = todays.filter(r => r.type === 'water');
-  const urineCount = todays.filter(isUrineEvent).length;
-  const stool = todays.filter(r => r.type === 'stool');
   const sumCc = arr => arr.reduce((s, r) => s + (Number(r.amount) || 0), 0);
-  const waterCc = sumCc(water), urineCc = sumCc(todays.filter(r => r.type === 'urine'));
+  const byType = t => todays.filter(r => r.type === t);
+  const water = byType('water'), food = byType('food'), iv = byType('iv');
+  const urine = byType('urine'), stool = byType('stool'), vomit = byType('vomit');
+  const urineCount = todays.filter(isUrineEvent).length;
+
+  const items = [
+    { icon: '💧', label: '喝水/飲品', count: water.length, cc: sumCc(water) },
+    { icon: '🍚', label: '吃東西', count: food.length },
+    { icon: '💉', label: '打點滴', count: iv.length, cc: sumCc(iv) },
+    { icon: '🚽', label: '小便', count: urineCount, cc: sumCc(urine), ccPrefix: '約' },
+    { icon: '💩', label: '大便', count: stool.length },
+    { icon: '🤢', label: '嘔吐', count: vomit.length, cc: sumCc(vomit) },
+  ];
   $('#ioSummaryCard').innerHTML = `
-    <h2>🧴 今日出入量</h2>
-    <div class="io-stats">
-      <div class="io-stat"><div class="io-num">${waterCc}<small>cc</small></div><div class="io-label">💧 攝入（${water.length} 次）</div></div>
-      <div class="io-stat"><div class="io-num">${urineCount}<small>次</small></div><div class="io-label">🚽 小便${urineCc ? `（約 ${urineCc}cc）` : ''}</div></div>
-      <div class="io-stat"><div class="io-num">${stool.length}<small>次</small></div><div class="io-label">💩 大便</div></div>
-    </div>`;
+    <h2>🧴 今日總覽</h2>
+    <div class="today-strip">${items.map(it => `
+      <div class="today-item">
+        <div class="ti-icon">${it.icon}</div>
+        <div class="ti-num">${it.count}<small style="font-size:.7rem;font-weight:600">次</small></div>
+        ${it.cc ? `<div class="ti-amt">${it.ccPrefix || ''}${it.cc}cc</div>` : ''}
+        <div class="ti-label">${it.label}</div>
+      </div>`).join('')}</div>`;
 }
 
 /* 小便倒數計時：每記錄一次小便（含大便順便）就重新起算 */
@@ -1477,7 +1619,7 @@ $('#recList').addEventListener('click', e => {
   if (id && confirm('確定要刪除這筆紀錄嗎？')) mutate(() => DB.remove('vitals', id), '已刪除');
 });
 
-const IO_ICON = { water: '💧 喝水', urine: '🚽 小便', stool: '💩 大便' };
+const IO_ICON = { water: '💧 喝水', food: '🍚 吃東西', iv: '💉 打點滴', urine: '🚽 小便', stool: '💩 大便', vomit: '🤢 嘔吐' };
 function ioLabel(r) {
   let s = IO_ICON[r.type] || r.type;
   if (r.amount != null && r.amount !== '') s += ` ${r.amount}cc`;
@@ -1521,7 +1663,7 @@ function downloadCsv(filename, rows) {
 /* 完整原始資料匯出：每張表所有欄位（含 id/created_at/family_code），不經篩選、不重新格式化，
    是真正的備份，不是給人閱讀用的精簡版。 */
 const RAW_EXPORT_TABLES = {
-  vitals:     { file: '生命徵象', cols: ['id', 'ts', 'temp', 'sys', 'dia', 'spo2', 'hr', 'glucose', 'recorder', 'note', 'family_code', 'created_at'] },
+  vitals:     { file: '生命徵象', cols: ['id', 'ts', 'temp', 'sys', 'dia', 'spo2', 'hr', 'glucose', 'weight', 'recorder', 'note', 'family_code', 'created_at'] },
   io_records: { file: '飲水排泄', cols: ['id', 'ts', 'type', 'amount', 'detail', 'recorder', 'note', 'family_code', 'created_at'] },
   logs:       { file: '交班日誌', cols: ['id', 'ts', 'author', 'text', 'family_code', 'created_at'] },
   members:    { file: '家人成員', cols: ['id', 'name', 'color', 'family_code', 'created_at'] },
@@ -1875,6 +2017,9 @@ function openLogs() {
   $('#logPage').classList.add('show');
   $('#logTimeline').scrollTop = 0;
 }
+$('#vitalsUpdated').addEventListener('click', e => {
+  if (e.target.closest('#btnRefreshVitals')) refreshAll(true);
+});
 $('#btnAllLogs').addEventListener('click', openLogs);
 $('#btnWriteLog').addEventListener('click', () => { openLogs(); $('#logInput').focus(); });
 $('#btnCloseLogs').addEventListener('click', () => $('#logPage').classList.remove('show'));
@@ -1940,14 +2085,20 @@ const VITAL_METRICS = {
   spo2: { name: '血氧', wlabel: '血氧 SpO₂ %', min: 50, max: 100, step: 1, def: 98, check: abnSpo2 },
   hr:   { name: '心率', wlabel: '心率 次/分', min: 30, max: 220, step: 1, def: 72, check: abnHr },
   glucose: { name: '血糖', wlabel: '血糖 mg/dL', min: 40, max: 500, step: 1, def: 100, check: abnGlucose },
+  /* 體重沒有醫學上通用的異常門檻，check 一律回傳 null（不標紅） */
+  weight: { name: '體重', wlabel: '體重 kg', min: 20, max: 150, step: .1, def: 60, fmt: v => v.toFixed(1), check: () => null },
 };
 const QUICK_DEFS = {
   vitals: { title: '🩺 記錄生命徵象', kind: 'vitals', metrics: ['temp', 'bp', 'spo2', 'hr'], toastLabel: '生命徵象' },
   temp:   { title: '🌡️ 記錄體溫', kind: 'vitals', metrics: ['temp'], toastLabel: '體溫' },
   glucose:{ title: '🩸 記錄血糖', kind: 'vitals', metrics: ['glucose'], tagChips: ['空腹', '飯前', '飯後', '睡前'], toastLabel: '血糖' },
-  water:  { title: '💧 記錄喝水/飲品', kind: 'io', ioType: 'water', chips: [100, 150, 200, 250, 300, 500], typeChips: ['水', '湯', '牛奶', '其他'], toastLabel: '喝水' },
-  urine:  { title: '🚽 記錄小便', kind: 'io', ioType: 'urine', chips: [100, 200, 300, 400], locChips: ['尿壺', '廁所'], toastLabel: '小便' },
+  weight: { title: '⚖️ 記錄體重', kind: 'vitals', metrics: ['weight'], toastLabel: '體重' },
+  water:  { title: '💧 記錄喝水/飲品', kind: 'io', ioType: 'water', amountLabel: '水量', chips: [100, 150, 200, 250, 300, 500], typeChips: ['水', '湯', '牛奶', '其他'], toastLabel: '喝水' },
+  food:   { title: '🍚 記錄吃東西', kind: 'io', ioType: 'food', typeOnly: ['全部吃完', '吃大半', '吃一半', '吃一點', '沒吃'], toastLabel: '吃東西' },
+  iv:     { title: '💉 記錄打點滴', kind: 'io', ioType: 'iv', amountLabel: '點滴量', chips: [100, 250, 500, 1000], toastLabel: '打點滴' },
+  urine:  { title: '🚽 記錄小便', kind: 'io', ioType: 'urine', amountLabel: '尿量', chips: [100, 200, 300, 400], locChips: ['尿壺', '廁所'], toastLabel: '小便' },
   stool:  { title: '💩 記錄大便', kind: 'io', ioType: 'stool', typeOnly: ['正常成形', '稀便', '偏硬', '血便'], locChips: ['排便椅', '廁所'], urineToo: true, toastLabel: '大便' },
+  vomit:  { title: '🤢 記錄嘔吐', kind: 'io', ioType: 'vomit', amountLabel: '嘔吐量', chips: [50, 100, 200, 300], toastLabel: '嘔吐' },
 };
 let quickType = null;
 let qWheels = {};   // 本次 modal 的滾輪
@@ -2030,7 +2181,7 @@ function openQuickModal(type) {
     </div>`;
   } else if (def.kind === 'io') {
     if (def.chips) {
-      body += `<label class="qlabel">尿量／水量（滾輪選擇，快速鍵可直接帶入）</label>
+      body += `<label class="qlabel">${esc(def.amountLabel || '份量')}（滾輪選擇，快速鍵可直接帶入）</label>
         <div class="chip-row" id="qChips">${def.chips.map(c =>
           `<button type="button" class="chip" data-cc="${c}">${c}cc</button>`).join('')}</div>
         <div class="wheel-row">${wheelBoxHtml('qwCc', 'cc 數（選「不記量」可略過）')}</div>`;
@@ -2129,6 +2280,7 @@ $('#btnSaveQuick').addEventListener('click', async () => {
     if (qEnabled.spo2) row.spo2 = qWheels.spo2.value;
     if (qEnabled.hr) row.hr = qWheels.hr.value;
     if (qEnabled.glucose) row.glucose = qWheels.glucose.value;
+    if (qEnabled.weight) row.weight = qWheels.weight.value;
     if (def.tagChips) {
       const tag = chipValue('qTagChips');
       if (tag) note = tag + (note ? '；' + note : '');
@@ -2153,7 +2305,7 @@ $('#btnSaveQuick').addEventListener('click', async () => {
     if (def.urineToo && chipValue('qUrineToo')) parts.push('有小便');
     const detail = parts.length ? parts.join('｜') : null;
     if (def.chips && amount == null && !confirm('未選擇 cc 數量，僅記錄發生時間，確定嗎？')) return;
-    ok = await mutate(() => DB.insert('io_records', { ts, type: def.ioType, amount, detail, recorder, note }),
+    ok = await mutate(() => insertIoWithFallback({ ts, type: def.ioType, amount, detail, recorder, note }),
       `✅ 已記錄${def.toastLabel}`);
   }
   if (ok) $('#quickModal').classList.remove('show');
