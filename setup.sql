@@ -73,6 +73,29 @@ create index if not exists shifts_family_date_idx on public.shifts (family_code,
 create index if not exists logs_family_ts_idx on public.logs (family_code, ts desc);
 create index if not exists io_records_family_ts_idx on public.io_records (family_code, ts desc);
 
+-- ============================================================
+-- 即時同步（Realtime）：把資料表加入 supabase_realtime publication，
+-- 這樣任何一位家人記錄後，其他人的畫面會立刻自動更新，不必等輪詢。
+-- 可重複執行，不會出錯。
+-- 註：App 另有「寫入後主動廣播」機制，就算沒執行這段也能即時同步，
+--     執行後可額外涵蓋「從 App 以外改動的資料」。
+-- ============================================================
+do $$
+declare t text;
+begin
+  if not exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    execute 'create publication supabase_realtime';
+  end if;
+  foreach t in array array['vitals','members','shifts','logs','io_records'] loop
+    if not exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
+    ) then
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    end if;
+  end loop;
+end $$;
+
 -- 開啟 RLS，並允許匿名（anon）讀寫。
 -- 資料以「家庭代碼」區隔：只有知道你們家庭代碼的人才查得到你們的資料。
 -- 此設計適合家庭私人使用；請勿在備註中存放身分證字號等高敏感資料。

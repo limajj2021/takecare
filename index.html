@@ -361,37 +361,29 @@ main{padding:4px 16px calc(var(--nav-h) + 84px)}
     <p class="sub">全家人一起照顧，資料即時互通</p>
 
     <div class="card">
-      <h2>☁️ 加入我們家的照護紀錄（推薦）</h2>
-      <p style="font-size:.9rem;color:var(--ink-2);margin-bottom:12px">
-        已經幫全家人設定好共用資料庫，輸入您的稱呼就能立即和家人共享同一份紀錄。
-      </p>
-      <div class="field"><label>病人稱呼</label>
-        <input id="suPatient" type="text" placeholder="例如：阿嬤"></div>
-      <div class="field"><label>您的稱呼（記錄時顯示的名字）</label>
-        <input id="suMe" type="text" placeholder="例如：大姊"></div>
-      <button class="btn" id="btnCloudStart">開始使用雲端同步</button>
-      <details>
+      <div id="suMemberPick" style="display:none">
+        <label class="qlabel">點一下您的名字就能開始</label>
+        <div class="chip-row" id="suMemberChips"></div>
+        <label class="qlabel" style="margin-top:6px">不在上面？輸入您的大名</label>
+      </div>
+      <div id="suNameLabel"><label class="qlabel">請輸入您的大名</label></div>
+      <input id="suMe" type="text" placeholder="例如：王小明" autocomplete="name"
+        style="width:100%;padding:14px 13px;border:1.5px solid var(--grid);border-radius:12px;background:#fbfdfd;font-size:1.15rem;margin-bottom:12px">
+      <button class="btn" id="btnCloudStart">開始使用</button>
+      <p class="muted-note" id="suHint">記錄資料時會顯示這個名字，家人才知道是誰記的。</p>
+      <details style="margin-top:14px">
         <summary>進階設定（一般不需要修改）</summary>
-        <div class="field" style="margin-top:8px"><label>Supabase 網址（Project URL）</label>
+        <div class="field" style="margin-top:8px"><label>病人稱呼（選填）</label>
+          <input id="suPatient" type="text" placeholder="例如：阿嬤"></div>
+        <div class="field"><label>Supabase 網址（Project URL）</label>
           <input id="suUrl" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off"></div>
         <div class="field"><label>Supabase 金鑰（publishable / anon public key）</label>
           <input id="suKey" type="text" placeholder="sb_publishable_..." autocomplete="off"></div>
         <div class="field"><label>家庭代碼（所有家人需輸入相同代碼）</label>
           <input id="suFamily" type="text" placeholder="例如：lin-family-2026" autocomplete="off"></div>
         <p class="muted-note">若要改用不同的 Supabase 資料庫，可在此覆蓋預設值。首次使用前記得先在該專案的 SQL Editor 執行 setup.sql。</p>
+        <button class="btn secondary sm" id="btnLocalStart" style="margin-top:10px">只存這支手機（本機模式）</button>
       </details>
-    </div>
-
-    <div class="card">
-      <h2>📱 先在這支手機上使用</h2>
-      <p style="font-size:.9rem;color:var(--ink-2);margin-bottom:12px">
-        資料只存在這支手機（本機模式），之後隨時可以在「設定」中改為雲端同步。
-      </p>
-      <div class="field"><label>病人稱呼</label>
-        <input id="localPatient" type="text" placeholder="例如：阿嬤"></div>
-      <div class="field"><label>您的稱呼</label>
-        <input id="localMe" type="text" placeholder="例如：大姊"></div>
-      <button class="btn secondary" id="btnLocalStart">使用本機模式</button>
     </div>
   </div>
 </div>
@@ -763,25 +755,33 @@ const state = {
   data: { vitals: [], members: [], shifts: [], logs: [], io_records: [] },
   chartRange: '7',
   weekOffset: 0,
-  sync: 'local',       // local | ok | offline | syncing
+  sync: 'local',       // local | ok | live | offline | syncing
   editingShift: null,  // shift row 或 null（新增）
   editingMember: null,
   pickedColor: MEMBER_COLORS[0],
+  realtime: false,     // 即時連線是否已建立
 };
 
 function setSync(s) {
   state.sync = s;
   const pill = $('#syncPill');
-  const map = { local: ['本機', 'local'], ok: ['☁ 已同步', ''], offline: ['⚠ 離線', 'offline'], syncing: ['同步中…', ''] };
-  const [text, cls] = map[s] || map.local;
+  const map = {
+    local: ['本機', 'local'], ok: ['☁ 已同步', ''], live: ['⚡ 即時同步', ''],
+    offline: ['⚠ 離線', 'offline'], syncing: ['同步中…', ''],
+  };
+  let [text, cls] = map[s] || map.local;
+  const pending = pendingQueue().length;
+  if (pending && s !== 'syncing') { text = `⏳ 待上傳 ${pending}`; cls = 'offline'; }
   pill.textContent = text;
   pill.className = 'sync-pill' + (cls ? ' ' + cls : '');
 }
+/* 同步完成後該顯示哪個狀態：即時連線中就顯示 ⚡，否則顯示已同步 */
+const restSyncState = () => (state.realtime ? 'live' : 'ok');
 
 /* ============ 資料層（雲端 Supabase REST / 本機 localStorage，介面相同） ============ */
 const ORDER = { vitals: 'ts.desc', logs: 'ts.desc', members: 'created_at.asc', shifts: 'date.asc', io_records: 'ts.desc' };
 
-async function sbFetch(table, { method = 'GET', query = '', body, headers: extraHeaders } = {}) {
+async function sbFetch(table, { method = 'GET', query = '', body, headers: extraHeaders, withHeaders } = {}) {
   const url = `${config.url.replace(/\/$/, '')}/rest/v1/${table}${query ? '?' + query : ''}`;
   const res = await fetch(url, {
     method,
@@ -795,25 +795,92 @@ async function sbFetch(table, { method = 'GET', query = '', body, headers: extra
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
-  if (res.status === 204) return null;
-  return res.json();
+  const data = res.status === 204 ? null : await res.json();
+  return withHeaders ? { data, headers: res.headers } : data;
 }
 const famQ = () => `family_code=eq.${encodeURIComponent(config.family)}`;
 
 /* Supabase 單次 API 回應筆數有上限（依專案設定，常見預設 1000）。
-   用 Range header 分頁抓到「真的收到空頁」才停止，不猜測伺服器上限，
-   確保長期累積的資料不會被悄悄截斷——這是全 App 資料完整性的關鍵。 */
+   第一頁帶 Prefer: count=exact，從 Content-Range（例如 0-499/1234）得知總筆數，
+   就能精準決定要不要抓下一頁——小表只發 1 個請求，不像先前固定要多打一次空頁確認。
+   若伺服器沒回確切總數（回 *），自動退回「抓到空頁為止」的保守做法，資料完整性不打折。 */
 const PAGE_SIZE = 500;
 async function sbFetchAll(table, query) {
   const all = [];
-  let offset = 0;
-  for (;;) {
-    const page = await sbFetch(table, { query, headers: { Range: `${offset}-${offset + PAGE_SIZE - 1}` } });
+  let total = null;
+  for (let offset = 0; ; ) {
+    const first = offset === 0;
+    const res = await sbFetch(table, {
+      query,
+      headers: {
+        Range: `${offset}-${offset + PAGE_SIZE - 1}`,
+        ...(first ? { Prefer: 'return=representation,count=exact' } : {}),
+      },
+      withHeaders: first,
+    });
+    const page = first ? res.data : res;
+    if (first) {
+      const m = String(res.headers.get('content-range') || '').match(/\/(\d+)$/);
+      if (m) total = +m[1];
+    }
     if (!page || page.length === 0) break;
     all.push(...page);
     offset += page.length;
+    if (total != null && all.length >= total) break;
   }
   return all;
+}
+
+/* ============ 離線寫入佇列 ============
+   沒網路時（醫院地下室、電梯、病房死角）寫入不再直接失敗掉資料：
+   先存進佇列並樂觀顯示在畫面上（標示「待上傳」），恢復連線後自動依序補送。
+   只有「網路層失敗」才進佇列；伺服器明確回錯（例如欄位不存在）仍照常拋出，
+   否則會變成永遠重試不會成功的殭屍工作。 */
+const QKEY = 'takecare_queue';
+const pendingQueue = () => lsGet(QKEY, []);
+const setPendingQueue = q => lsSet(QKEY, q);
+const isNetworkError = e => !/^Supabase \d/.test(String((e && e.message) || ''));
+function enqueue(op) {
+  const q = pendingQueue();
+  q.push({ ...op, at: new Date().toISOString(), tries: 0 });
+  setPendingQueue(q);
+}
+/* 把尚未上傳的異動疊加到伺服器資料上，讓畫面看起來已經生效 */
+function applyPending(table, rows) {
+  let out = rows;
+  for (const op of pendingQueue()) {
+    if (op.table !== table) continue;
+    if (op.op === 'insert') out = [...out, { ...op.row, id: op.tmpId, created_at: op.at, _pending: true }];
+    else if (op.op === 'update') out = out.map(r => (r.id === op.id ? { ...r, ...op.patch, _pending: true } : r));
+    else if (op.op === 'remove') out = out.filter(r => r.id !== op.id);
+  }
+  return out;
+}
+/* 防重入：online 事件與輪詢可能同時觸發，若不擋住會把同一筆送上去兩次 */
+let flushing = false;
+async function flushQueue() {
+  if (!isCloud() || flushing) return false;
+  flushing = true;
+  try {
+    let q = pendingQueue(), changed = false;
+    while (q.length) {
+      const op = q[0];
+      try {
+        if (op.op === 'insert') await sbFetch(op.table, { method: 'POST', body: { ...op.row, family_code: config.family } });
+        else if (op.op === 'update') await sbFetch(op.table, { method: 'PATCH', query: `id=eq.${op.id}&${famQ()}`, body: op.patch });
+        else if (op.op === 'remove') await sbFetch(op.table, { method: 'DELETE', query: `id=eq.${op.id}&${famQ()}` });
+        q.shift(); changed = true;
+      } catch (e) {
+        if (isNetworkError(e)) break;      // 還是沒網路 → 保留佇列，下次再試
+        op.tries = (op.tries || 0) + 1;    // 伺服器錯誤 → 重試幾次仍失敗就放棄該筆，不卡住後面
+        if (op.tries >= 3) { console.warn('佇列項目重試多次仍失敗，已略過', op, e); q.shift(); changed = true; }
+        else { setPendingQueue(q); break; }
+      }
+      setPendingQueue(q);
+    }
+    if (changed) rtBroadcastChange();
+    return changed;
+  } finally { flushing = false; }
 }
 
 const DB = {
@@ -822,11 +889,11 @@ const DB = {
     try {
       const rows = await sbFetchAll(table, `select=*&${famQ()}&order=${ORDER[table]}`);
       lsSet('takecare_cache_' + table, rows);
-      return rows;
+      return applyPending(table, rows);
     } catch (e) {
       console.warn('list failed, using cache', table, e);
       setSync('offline');
-      return lsGet('takecare_cache_' + table, []);
+      return applyPending(table, lsGet('takecare_cache_' + table, []));
     }
   },
   async insert(table, row) {
@@ -835,8 +902,15 @@ const DB = {
       const arr = lsGet('takecare_' + table, []); arr.push(row); lsSet('takecare_' + table, arr);
       return row;
     }
-    const rows = await sbFetch(table, { method: 'POST', body: { ...row, family_code: config.family } });
-    return rows[0];
+    try {
+      const rows = await sbFetch(table, { method: 'POST', body: { ...row, family_code: config.family } });
+      return rows[0];
+    } catch (e) {
+      if (!isNetworkError(e)) throw e;
+      const tmpId = uuid();
+      enqueue({ op: 'insert', table, row, tmpId });
+      return { ...row, id: tmpId, created_at: new Date().toISOString(), _pending: true };
+    }
   },
   async update(table, id, patch) {
     if (!isCloud()) {
@@ -845,14 +919,28 @@ const DB = {
       if (i >= 0) { arr[i] = { ...arr[i], ...patch }; lsSet('takecare_' + table, arr); }
       return;
     }
-    await sbFetch(table, { method: 'PATCH', query: `id=eq.${id}&${famQ()}`, body: patch });
+    try {
+      await sbFetch(table, { method: 'PATCH', query: `id=eq.${id}&${famQ()}`, body: patch });
+    } catch (e) {
+      if (!isNetworkError(e)) throw e;
+      enqueue({ op: 'update', table, id, patch });
+    }
   },
   async remove(table, id) {
     if (!isCloud()) {
       lsSet('takecare_' + table, lsGet('takecare_' + table, []).filter(r => r.id !== id));
       return;
     }
-    await sbFetch(table, { method: 'DELETE', query: `id=eq.${id}&${famQ()}` });
+    // 刪除的若是還沒上傳的暫存項目，直接把它從佇列裡拿掉即可
+    const q = pendingQueue();
+    const i = q.findIndex(op => op.op === 'insert' && op.tmpId === id);
+    if (i >= 0) { q.splice(i, 1); setPendingQueue(q); return; }
+    try {
+      await sbFetch(table, { method: 'DELETE', query: `id=eq.${id}&${famQ()}` });
+    } catch (e) {
+      if (!isNetworkError(e)) throw e;
+      enqueue({ op: 'remove', table, id });
+    }
   },
 };
 
@@ -888,6 +976,7 @@ function normalizeVitals(rows) {
 
 async function refreshAll(showStatus) {
   if (isCloud() && showStatus) setSync('syncing');
+  if (isCloud()) { try { await flushQueue(); } catch (e) { console.warn('flush failed', e); } }
   const [vitals, members, shifts, logs, io_records] = await Promise.all(
     ['vitals', 'members', 'shifts', 'logs', 'io_records'].map(t => DB.list(t)));
   state.data = { vitals, members, shifts, logs, io_records };
@@ -898,15 +987,17 @@ async function refreshAll(showStatus) {
   state.data.logs.sort(byTsDesc);
   state.data.io_records.sort(byTsDesc);
   state.data.shifts.sort((a, b) => (a.date + (a.start_time||'')).localeCompare(b.date + (b.start_time||'')));
-  if (isCloud() && state.sync !== 'offline') setSync('ok');
+  if (isCloud() && state.sync !== 'offline') setSync(restSyncState());
   renderAll();
 }
 
-/* 異動後：先重抓再畫（雲端模式確保拿到伺服器版本） */
+/* 異動後：先重抓再畫（雲端模式確保拿到伺服器版本），並廣播讓其他家人立刻更新 */
 async function mutate(fn, okMsg) {
+  const before = pendingQueue().length;
   try {
     await fn();
-    if (okMsg) toast(okMsg);
+    if (pendingQueue().length > before) toast('📴 目前沒有網路，已暫存；恢復連線後會自動上傳');
+    else { if (okMsg) toast(okMsg); rtBroadcastChange(); }
     await refreshAll();
     return true;
   } catch (e) {
@@ -916,6 +1007,86 @@ async function mutate(fn, okMsg) {
       : '⚠ 儲存失敗，請確認網路後再試');
     return false;
   }
+}
+
+/* ============ 即時同步（Supabase Realtime，Phoenix 協定，原生 WebSocket） ============
+   不引入 supabase-js CDN，維持單檔與離線可用。兩條路徑同時啟用：
+   1) postgres_changes：資料庫有變更就推播（需在 Supabase 把資料表加入 supabase_realtime publication）
+   2) broadcast：任何人在 App 內寫入後主動廣播——不需任何資料庫設定就能讓家人立刻看到。
+      廣播內容只帶「有東西變了」的訊號，不含任何病人資料。 */
+const RT_TABLES = ['vitals', 'members', 'shifts', 'logs', 'io_records'];
+let rtWs = null, rtRef = 0, rtHeartbeat = null, rtRetry = 0, rtReconnectTimer = null, rtSyncTimer = null;
+const rtTopic = () => `realtime:takecare:${config.family}`;
+
+function rtSend(event, payload, extra) {
+  if (!rtWs || rtWs.readyState !== WebSocket.OPEN) return false;
+  rtWs.send(JSON.stringify({
+    topic: event === 'heartbeat' ? 'phoenix' : rtTopic(),
+    event, payload: payload || {}, ref: String(++rtRef), ...extra,
+  }));
+  return true;
+}
+function rtScheduleSync() {              // 連續事件合併成一次重抓
+  clearTimeout(rtSyncTimer);
+  rtSyncTimer = setTimeout(() => refreshAll(), 400);
+}
+function rtBroadcastChange() {
+  rtSend('broadcast', { type: 'broadcast', event: 'changed', payload: {} });
+}
+function rtConnect() {
+  if (!isCloud() || !config.url || !config.key) return;
+  if (rtWs && (rtWs.readyState === WebSocket.CONNECTING || rtWs.readyState === WebSocket.OPEN)) return;
+  clearTimeout(rtReconnectTimer);
+  let ws;
+  try {
+    const wsUrl = config.url.replace(/\/$/, '').replace(/^http/, 'ws')
+      + `/realtime/v1/websocket?apikey=${encodeURIComponent(config.key)}&vsn=1.0.0`;
+    ws = new WebSocket(wsUrl);
+  } catch (e) { console.warn('realtime connect failed', e); rtScheduleReconnect(); return; }
+  rtWs = ws;
+  ws.onopen = () => {
+    const joinRef = String(++rtRef);
+    ws.send(JSON.stringify({
+      topic: rtTopic(), event: 'phx_join', ref: joinRef, join_ref: joinRef,
+      payload: { config: {
+        broadcast: { self: false },
+        postgres_changes: RT_TABLES.map(table => ({
+          event: '*', schema: 'public', table, filter: `family_code=eq.${config.family}`,
+        })),
+      } },
+    }));
+    clearInterval(rtHeartbeat);
+    rtHeartbeat = setInterval(() => rtSend('heartbeat'), 25000);
+  };
+  ws.onmessage = ev => {
+    let msg; try { msg = JSON.parse(ev.data); } catch { return; }
+    if (msg.event === 'phx_reply' && msg.topic === rtTopic() && msg.payload && msg.payload.status === 'ok') {
+      rtRetry = 0;
+      if (!state.realtime) {
+        state.realtime = true;
+        if (state.sync !== 'offline') setSync('live');
+        startPolling();                  // 即時連線成立 → 輪詢放慢當安全網
+      }
+    } else if (msg.event === 'postgres_changes' || msg.event === 'broadcast') {
+      rtScheduleSync();
+    }
+  };
+  ws.onerror = () => { try { ws.close(); } catch {} };
+  ws.onclose = () => { rtDown(); rtScheduleReconnect(); };
+}
+function rtDown() {
+  clearInterval(rtHeartbeat);
+  if (state.realtime) {
+    state.realtime = false;
+    if (state.sync === 'live') setSync('ok');
+    startPolling();                      // 即時連線斷掉 → 輪詢加快補上
+  }
+}
+function rtScheduleReconnect() {
+  if (!isCloud()) return;
+  clearTimeout(rtReconnectTimer);
+  const delay = Math.min(30000, 1000 * Math.pow(2, rtRetry++));
+  rtReconnectTimer = setTimeout(rtConnect, delay);
 }
 
 /* ============ 異常判定 ============ */
@@ -1209,7 +1380,7 @@ function renderRecords() {
     return `<div class="rec-item">
       <div class="rec-head">
         <span class="rec-time">${esc(fmtDT(v.ts))}</span>
-        <span class="rec-by">${esc(v.recorder || '')}</span>
+        <span class="rec-by">${esc(v.recorder || '')}${v._pending ? ' ⏳待上傳' : ''}</span>
         <button class="rec-del" data-del-vital="${esc(v.id)}">刪除</button>
       </div>
       <div class="rec-vals">${parts.join('')}</div>
@@ -1241,7 +1412,7 @@ function renderIoList() {
     <div class="rec-item">
       <div class="rec-head">
         <span class="rec-time">${esc(fmtDT(r.ts))}</span>
-        <span class="rec-by">${esc(r.recorder || '')}</span>
+        <span class="rec-by">${esc(r.recorder || '')}${r._pending ? ' ⏳待上傳' : ''}</span>
         <button class="rec-del" data-del-io="${esc(r.id)}">刪除</button>
       </div>
       <div class="rec-vals"><span class="rec-val"><b>${ioLabel(r)}</b></span></div>
@@ -1910,16 +2081,9 @@ $('#btnSaveQuick').addEventListener('click', async () => {
 });
 
 /* ============ 設定 ============ */
-/* withMe=true：個人捷徑連結，內含自己的稱呼，打開即完成登入，不用再輸入任何東西 */
-function inviteLink(withMe) {
-  const payload = { u: config.url, k: config.key, f: config.family, p: config.patient };
-  if (withMe) {
-    const me = lsGet('takecare_me', '');
-    if (me) payload.m = me;
-  }
-  const b64 = btoa(encodeURIComponent(JSON.stringify(payload)));
-  return location.origin + location.pathname + '#join=' + b64;
-}
+/* 邀請家人＝直接分享 App 網址即可，不需要任何編碼過的長連結：
+   家人打開網址後只要輸入自己的大名（或點名字）就能看到同一份資料。 */
+const appUrl = () => location.origin + location.pathname;
 $('#btnSettings').addEventListener('click', () => {
   $('#setPatient').value = (config && config.patient) || '';
   $('#setMe').value = lsGet('takecare_me', '');
@@ -1930,39 +2094,22 @@ $('#btnSettings').addEventListener('click', () => {
   const cs = $('#cloudSettings');
   if (isCloud()) {
     cs.innerHTML = `
-      <div class="field"><label>家庭代碼</label><input type="text" id="setFamily" value="${esc(config.family)}"></div>
       <label style="display:block;font-size:.88rem;font-weight:700;color:var(--ink-2);margin-bottom:5px">邀請家人加入</label>
-      <div class="invite-box" id="inviteBox">${esc(inviteLink())}</div>
+      <p style="font-size:.92rem;color:var(--ink-2);margin-bottom:8px">
+        把 App 網址傳給家人就好，他們打開後輸入自己的大名（或直接點名字）就能看到同一份資料。
+      </p>
       <div class="btn-row" style="margin-bottom:12px">
-        <button class="btn secondary sm" id="btnCopyInvite" type="button">📋 複製連結</button>
-        <button class="btn secondary sm" id="btnShareInvite" type="button">📤 分享給家人</button>
+        <button class="btn secondary sm" id="btnShareInvite" type="button">📤 分享 App 網址</button>
       </div>
-      <p class="muted-note" style="margin:0 0 12px">家人在手機上打開這個連結，就會自動完成設定、看到同一份資料。</p>
-      ${lsGet('takecare_me', '') ? `
-      <label style="display:block;font-size:.88rem;font-weight:700;color:var(--ink-2);margin-bottom:5px">🔖 我的個人捷徑連結</label>
-      <div class="invite-box" id="myLinkBox">${esc(inviteLink(true))}</div>
-      <div class="btn-row" style="margin-bottom:8px">
-        <button class="btn secondary sm" id="btnCopyMyLink" type="button">📋 複製連結</button>
-        <button class="btn secondary sm" id="btnShareMyLink" type="button">📤 分享/收藏</button>
-      </div>
-      <p class="muted-note" style="margin:0 0 12px">這個連結已包含您的稱呼，建議傳給自己保存（例如 LINE「傳給自己」、備忘錄、瀏覽器書籤）。就算手機清除了瀏覽器資料，打開這個連結也能立即恢復登入，不用重新輸入任何東西。</p>` : ''}`;
-    $('#btnCopyInvite').addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(inviteLink()); toast('已複製邀請連結'); }
-      catch { toast('複製失敗，請長按連結手動複製'); }
-    });
+      <details style="margin-bottom:12px">
+        <summary>進階：家庭代碼</summary>
+        <div class="field" style="margin-top:8px"><input type="text" id="setFamily" value="${esc(config.family)}"></div>
+        <p class="muted-note" style="margin:0">全家人必須使用相同代碼才會看到同一份資料，一般不需要更動。</p>
+      </details>`;
     $('#btnShareInvite').addEventListener('click', async () => {
-      const url = inviteLink();
-      if (navigator.share) { try { await navigator.share({ title: '家庭照護紀錄', text: '加入我們的照護紀錄', url }); } catch {} }
-      else { try { await navigator.clipboard.writeText(url); toast('已複製邀請連結'); } catch {} }
-    });
-    $('#btnCopyMyLink')?.addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(inviteLink(true)); toast('已複製個人捷徑連結'); }
-      catch { toast('複製失敗，請長按連結手動複製'); }
-    });
-    $('#btnShareMyLink')?.addEventListener('click', async () => {
-      const url = inviteLink(true);
-      if (navigator.share) { try { await navigator.share({ title: '我的照護紀錄捷徑', text: '我的個人登入捷徑連結', url }); } catch {} }
-      else { try { await navigator.clipboard.writeText(url); toast('已複製個人捷徑連結'); } catch {} }
+      const url = appUrl();
+      if (navigator.share) { try { await navigator.share({ title: '家庭照護紀錄', text: '一起記錄照護狀況', url }); } catch {} }
+      else { try { await navigator.clipboard.writeText(url); toast('已複製 App 網址'); } catch { toast('請手動複製網址列的網址'); } }
     });
   } else {
     cs.innerHTML = `
@@ -2061,34 +2208,55 @@ $('#btnResetApp').addEventListener('click', () => {
 $$('[data-close]').forEach(b => b.addEventListener('click', () => $('#' + b.dataset.close).classList.remove('show')));
 $$('.overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('show'); }));
 
-/* ============ 首次設定 ============ */
-$('#btnCloudStart').addEventListener('click', async () => {
-  const url = $('#suUrl').value.trim(), key = $('#suKey').value.trim(), fam = $('#suFamily').value.trim();
-  if (!url || !key || !fam) { toast('請填寫 Supabase 網址、金鑰與家庭代碼'); return; }
-  config = { mode: 'cloud', url, key, family: fam, patient: $('#suPatient').value.trim() };
+/* ============ 首次設定：只要輸入大名（或點現有家人的名字） ============ */
+/* 共用資料庫已內建於 DEFAULT_CLOUD，不需要使用者填任何連線資訊。
+   開啟時先跟雲端拿家人名單做成按鈕，家人點一下名字就能進來，一個字都不用打。 */
+async function loadSetupMembers() {
+  const url = $('#suUrl').value.trim() || DEFAULT_CLOUD.url;
+  const key = $('#suKey').value.trim() || DEFAULT_CLOUD.key;
+  const fam = $('#suFamily').value.trim() || DEFAULT_CLOUD.family;
+  try {
+    const res = await fetch(
+      `${url.replace(/\/$/, '')}/rest/v1/members?select=name,color&family_code=eq.${encodeURIComponent(fam)}&order=created_at.asc`,
+      { headers: { apikey: key, Authorization: 'Bearer ' + key } });
+    if (!res.ok) return;
+    const members = await res.json();
+    if (!members.length) return;
+    $('#suMemberChips').innerHTML = members.map(m =>
+      `<button type="button" class="chip" data-name="${esc(m.name)}">${esc(m.name)}</button>`).join('');
+    $('#suMemberPick').style.display = 'block';
+    $('#suNameLabel').style.display = 'none';
+  } catch (e) { console.warn('load setup members failed', e); }
+}
+$('#suMemberChips').addEventListener('click', e => {
+  const b = e.target.closest('.chip');
+  if (b) startWithName(b.dataset.name);
+});
+
+async function startWithName(me) {
+  if (!me) { toast('請輸入您的大名'); return; }
+  config = {
+    mode: 'cloud',
+    url: $('#suUrl').value.trim() || DEFAULT_CLOUD.url,
+    key: $('#suKey').value.trim() || DEFAULT_CLOUD.key,
+    family: $('#suFamily').value.trim() || DEFAULT_CLOUD.family,
+    patient: $('#suPatient').value.trim(),
+  };
   lsSet('takecare_config', config);
-  const me = $('#suMe').value.trim();
-  if (me) lsSet('takecare_me', me);
+  lsSet('takecare_me', me);
   startApp();
-  if (me) {
-    try {
-      const members = await DB.list('members');
-      if (!members.some(m => m.name === me)) {
-        const used = new Set(members.map(m => m.color));
-        await DB.insert('members', { name: me, color: MEMBER_COLORS.find(c => !used.has(c)) || MEMBER_COLORS[0] });
-      }
-    } catch (e) { console.warn(e); }
-    refreshAll();
-  }
+}
+$('#btnCloudStart').addEventListener('click', () => startWithName($('#suMe').value.trim()));
+$('#suMe').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); startWithName($('#suMe').value.trim()); }
 });
 $('#btnLocalStart').addEventListener('click', async () => {
-  config = { mode: 'local', patient: $('#localPatient').value.trim() };
+  const me = $('#suMe').value.trim();
+  if (!me) { toast('請先輸入您的大名'); return; }
+  config = { mode: 'local', patient: $('#suPatient').value.trim() };
   lsSet('takecare_config', config);
-  const me = $('#localMe').value.trim();
-  if (me) {
-    lsSet('takecare_me', me);
-    await DB.insert('members', { name: me, color: MEMBER_COLORS[0] });
-  }
+  lsSet('takecare_me', me);
+  await DB.insert('members', { name: me, color: MEMBER_COLORS[0] });
   startApp();
 });
 
@@ -2154,13 +2322,15 @@ function applyConfig() {
   applyTitle();
 }
 
+/* 智能輪詢：即時連線正常時只當安全網（60 秒核對一次）；
+   即時連線斷掉時自動加快到 10 秒，確保還是拿得到家人的最新紀錄。 */
 let pollTimer;
 function startPolling() {
   clearInterval(pollTimer);
   if (!isCloud()) return;
   pollTimer = setInterval(() => {
     if (document.visibilityState === 'visible') refreshAll();
-  }, 20000);
+  }, state.realtime ? 60000 : 10000);
 }
 
 /* 確保「我」在家人成員名單裡，否則排班選單選不到自己 */
@@ -2186,6 +2356,7 @@ function startApp() {
     if (added) refreshAll();
   });
   startPolling();
+  rtConnect();
   // 主畫面捷徑（長按 App 圖示）帶 ?quick=xxx 直接打開對應的快速記錄
   const qp = new URLSearchParams(location.search).get('quick');
   if (qp && QUICK_DEFS[qp]) {
@@ -2242,10 +2413,12 @@ $('#btnInstall').addEventListener('click', async () => {
   $('#installModal').classList.add('show');
 });
 
+/* 手機息屏會凍結計時器、也常讓 WebSocket 靜默斷線，
+   所以回到前景與網路恢復時都要立刻重連即時通道並補抓一次。 */
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && config) refreshAll();
+  if (document.visibilityState === 'visible' && config) { rtConnect(); refreshAll(); }
 });
-window.addEventListener('online', () => { if (config) refreshAll(true); });
+window.addEventListener('online', () => { if (config) { rtConnect(); refreshAll(true); } });
 
 /* 進入點 */
 tryJoinLink();
@@ -2255,6 +2428,8 @@ else {
   $('#suKey').value = DEFAULT_CLOUD.key;
   $('#suFamily').value = DEFAULT_CLOUD.family;
   $('#setupScreen').classList.add('show');
+  loadSetupMembers();
+  setTimeout(() => $('#suMe').focus(), 300);
 }
 </script>
 </body>
